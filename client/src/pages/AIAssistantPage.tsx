@@ -154,7 +154,7 @@ export default function AIAssistantPage() {
                   : 'bg-secondary border border-border rounded-tl-sm'
               }`}>
                 {msg.role === 'assistant' ? (
-                  <div className="prose prose-sm prose-invert max-w-none">
+                  <div className="text-sm space-y-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-0.5 [&_p]:mb-1 [&_code]:bg-secondary [&_code]:px-1 [&_code]:rounded [&_table]:text-xs [&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:p-1 [&_td]:border [&_td]:border-border [&_td]:p-1">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 ) : (
