@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id            String        @id @default(cuid())
+  name          String
+  dotNumber     String?
+  mcNumber      String?
+  address       String?
+  phone         String?
+  email         String?
+  operationType String        @default("MIXED")
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  users         User[]
+  drivers       Driver[]
+  loads         Load[]
+  documents     Document[]
+  settings      TenantSetting[]
+}
+
+model TenantSetting {
+  id        String  @id @default(cuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  @@unique([tenantId, key])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("DISPATCHER")
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Driver {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  tenant             Tenant    @relation(fields: [tenantId], references: [id])
+  name               String
+  email              String?
+  phone              String
+  cdlNumber          String
+  cdlState           String
+  cdlClass           String    @default("A")
+  cdlExpiry          DateTime
+  status             String    @default("AVAILABLE")
+  currentLat         Float?
+  currentLng         Float?
+  currentCity        String?
+  currentState       String?
+  hosDriveRemaining  Float     @default(11)
+  hosShiftRemaining  Float     @default(14)
+  hosCycleRemaining  Float     @default(70)
+  equipmentTypes     String    @default("DRY_VAN")
+  truckNumber        String?
+  trailerNumber      String?
+  eldProvider        String?
+  eldDriverId        String?
+  totalMiles         Float     @default(0)
+  totalLoads         Int       @default(0)
+  rating             Float     @default(5.0)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  loads              Load[]
+  documents          Document[]
+}
+
+model Load {
+  id                  String      @id @default(cuid())
+  tenantId            String
+  tenant              Tenant      @relation(fields: [tenantId], references: [id])
+  loadNumber          String      @unique
+  status              String      @default("AVAILABLE")
+  equipmentType       String      @default("DRY_VAN")
+  driverId            String?
+  driver              Driver?     @relation(fields: [driverId], references: [id])
+  commodity           String
+  weight              Float
+  pieces              Int?
+  miles               Float?
+  rate                Float
+  driverPay           Float?
+  fuelSurcharge       Float?
+  brokerName          String?
+  brokerPhone         String?
+  brokerEmail         String?
+  brokerMCNumber      String?
+  referenceNumber     String?
+  poNumber            String?
+  specialInstructions String?
+  hazmat              Boolean     @default(false)
+  teamLoad            Boolean     @default(false)
+  tempMin             Float?
+  tempMax             Float?
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  stops               LoadStop[]
+  documents           Document[]
+}
+
+model LoadStop {
+  id                  String    @id @default(cuid())
+  loadId              String
+  load                Load      @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  type                String
+  sequence            Int
+  address             String
+  city                String
+  state               String
+  zip                 String
+  lat                 Float?
+  lng                 Float?
+  scheduledArrival    DateTime
+  actualArrival       DateTime?
+  scheduledDeparture  DateTime?
+  actualDeparture     DateTime?
+  contactName         String?
+  contactPhone        String?
+  notes               String?
+  referenceNumber     String?
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  loadId      String?
+  load        Load?     @relation(fields: [loadId], references: [id])
+  driverId    String?
+  driver      Driver?   @relation(fields: [driverId], references: [id])
+  type        String
+  fileName    String
+  fileUrl     String
+  parsedData  String?
+  parseStatus String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Alert {
+  id          String    @id @default(cuid())
+  type        String
+  title       String
+  message     String
+  tenantId    String?
+  driverId    String?
+  loadId      String?
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
