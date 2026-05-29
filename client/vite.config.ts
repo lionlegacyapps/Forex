@@ -19,4 +19,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Code-split large chunks for better Vercel CDN performance
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'chart-vendor': ['recharts'],
+          'map-vendor': ['mapbox-gl'],
+          'query-vendor': ['@tanstack/react-query', 'axios'],
+        },
+      },
+    },
+  },
 });
