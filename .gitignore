@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.DS_Store
+*.log
+coverage/
+.nyc_output/
+client/dist/
+server/dist/
