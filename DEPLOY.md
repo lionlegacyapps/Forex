@@ -73,8 +73,11 @@ export DATABASE_URL="postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=requ
 
 cd server
 
-# Push schema to Neon
-npx prisma db push
+# Push schema to Neon (use production schema)
+npx prisma db push --schema=./server/prisma/schema.production.prisma
+
+# Generate Prisma client for PostgreSQL
+npx prisma generate --schema=./server/prisma/schema.production.prisma
 
 # Seed demo data
 npm run seed

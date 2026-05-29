@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=client",
-    "vercel-build": "npm run build --workspace=shared && npm run build --workspace=client",
+    "vercel-build": "npm run build --workspace=shared && npx prisma generate --schema=./server/prisma/schema.production.prisma && npm run build --workspace=client",
     "seed": "npm run seed --workspace=server",
     "setup": "npm install && npm run build --workspace=shared && npm run db:push --workspace=server && npm run seed --workspace=server",
     "db:push": "npm run db:push --workspace=server",
