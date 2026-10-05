@@ -1,16 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
 import { palette } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-
-const icon = (name: keyof typeof Ionicons.glyphMap) => ({
-  color,
-  size,
-}: {
-  color: string;
-  size: number;
-}) => <Ionicons name={name} color={color} size={size} />;
 
 export default function OwnerLayout() {
   const { profile } = useAuth();
@@ -31,34 +22,31 @@ export default function OwnerLayout() {
     >
       <Tabs.Screen
         name="dashboard"
-        options={{ title: "Dashboard", tabBarIcon: icon("grid-outline") }}
+        options={{ title: "Dashboard" }}
       />
       <Tabs.Screen
         name="trucks-dashboard"
-        options={{ title: "Trucks", tabBarIcon: icon("car-sport-outline") }}
+        options={{ title: "Trucks" }}
       />
       <Tabs.Screen
         name="loads-overview"
-        options={{ title: "Loads", tabBarIcon: icon("trail-sign-outline") }}
+        options={{ title: "Loads" }}
       />
       <Tabs.Screen
         name="documents-factoring"
-        options={{ title: "Factoring", tabBarIcon: icon("document-attach-outline") }}
+        options={{ title: "Factoring" }}
       />
       {profile.isOwnerOperator ? (
         <Tabs.Screen
           name="driver-view"
-          options={{ title: "Driver View", tabBarIcon: icon("navigate-outline") }}
+          options={{ title: "Driver View" }}
         />
       ) : (
         <Tabs.Screen name="driver-view" options={{ href: null }} />
       )}
-      <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: icon("chatbubbles-outline") }} />
-      <Tabs.Screen
-        name="notifications"
-        options={{ title: "Alerts", tabBarIcon: icon("notifications-outline") }}
-      />
-      <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: icon("person-outline") }} />
+      <Tabs.Screen name="chat" options={{ title: "Chat" }} />
+      <Tabs.Screen name="notifications" options={{ title: "Alerts" }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       <Tabs.Screen name="truck-status" options={{ href: null }} />
       <Tabs.Screen name="driver-loads" options={{ href: null }} />
       <Tabs.Screen name="driver-status-updates" options={{ href: null }} />

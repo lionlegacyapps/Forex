@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "dispatchmobile",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B1220"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lionlegacy.dispatchmobile"
@@ -32,6 +27,15 @@
     },
     "plugins": [
       "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0B1220"
+        }
+      ],
       [
         "expo-notifications",
         {

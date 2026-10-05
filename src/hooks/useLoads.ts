@@ -10,13 +10,27 @@ export const useLoads = (profile: AppProfile | null, asDriver = false) => {
   const refresh = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    setLoads(await listLoadsForProfile(profile, { asDriver }));
+    const nextLoads = await listLoadsForProfile(profile, { asDriver });
+    setLoads(nextLoads);
     setLoading(false);
   }, [asDriver, profile]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    let cancelled = false;
+    if (!profile) return;
+
+    const loadInitially = async () => {
+      const nextLoads = await listLoadsForProfile(profile, { asDriver });
+      if (!cancelled) {
+        setLoads(nextLoads);
+      }
+    };
+
+    loadInitially();
+    return () => {
+      cancelled = true;
+    };
+  }, [asDriver, profile]);
 
   return { loads, loading, refresh };
 };

@@ -18,6 +18,14 @@ import { formatDateTime } from "@/utils/format";
 
 const documentTypes = ["pod", "bol", "lumper_receipt", "scale_ticket", "other"] as const;
 
+type LoadDocument = {
+  id: string;
+  file_name: string;
+  document_type: string;
+  file_path: string;
+  created_at: string;
+};
+
 type DriverDocumentsScreenProps = {
   title?: string;
 };
@@ -31,15 +39,7 @@ export const DriverDocumentsScreen = ({
   const { loads } = useLoads(profile, true);
   const [selectedType, setSelectedType] = useState<(typeof documentTypes)[number]>("pod");
   const [uploading, setUploading] = useState(false);
-  const [documents, setDocuments] = useState<
-    Array<{
-      id: string;
-      file_name: string;
-      document_type: string;
-      file_path: string;
-      created_at: string;
-    }>
-  >([]);
+  const [documents, setDocuments] = useState<LoadDocument[]>([]);
 
   const selectedLoad = useMemo(
     () => loads.find((load) => load.id === targetLoadId) ?? loads[0] ?? null,
@@ -54,7 +54,15 @@ export const DriverDocumentsScreen = ({
   };
 
   useEffect(() => {
-    refreshDocuments();
+    if (!profile || !selectedLoad) return;
+    const loadDocuments = async () => {
+      const nextDocuments = await listLoadDocuments({
+        companyId: profile.companyId,
+        loadId: selectedLoad.id,
+      });
+      setDocuments(nextDocuments);
+    };
+    loadDocuments();
   }, [selectedLoad?.id, profile?.companyId]);
 
   const handleUpload = async () => {

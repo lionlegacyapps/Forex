@@ -9,21 +9,21 @@ import { useAuth } from "@/context/AuthContext";
 import { listRecommendedLoads } from "@/services/recommendedLoadsService";
 import { formatDateTime } from "@/utils/format";
 
+type RecommendedLoad = {
+  id: string;
+  load_number: string;
+  origin: string;
+  destination: string;
+  score: number | null;
+  reason: string | null;
+  status: string | null;
+  created_at: string;
+  company_id: string;
+};
+
 export const RecommendedLoadsScreen = () => {
   const { profile } = useAuth();
-  const [loads, setLoads] = useState<
-    Array<{
-      id: string;
-      load_number: string;
-      origin: string;
-      destination: string;
-      score: number | null;
-      reason: string | null;
-      status: string | null;
-      created_at: string;
-      company_id: string;
-    }>
-  >([]);
+  const [loads, setLoads] = useState<RecommendedLoad[]>([]);
 
   const refresh = async () => {
     if (!profile) return;
@@ -31,7 +31,12 @@ export const RecommendedLoadsScreen = () => {
   };
 
   useEffect(() => {
-    refresh();
+    if (!profile) return;
+    const loadInitialRecommendations = async () => {
+      const nextLoads = await listRecommendedLoads(profile.companyId);
+      setLoads(nextLoads);
+    };
+    loadInitialRecommendations();
   }, [profile?.companyId]);
 
   return (
