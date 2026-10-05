@@ -1,0 +1,5 @@
+import { ChatCenterScreen } from "@/features/shared/ChatCenterScreen";
+
+export default function DriverChatRoute() {
+  return <ChatCenterScreen />;
+}
