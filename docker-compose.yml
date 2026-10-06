@@ -1,0 +1,22 @@
+# Backend API only.
+# Persistent data lives in Supabase PostgreSQL — do not run Postgres in Compose.
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: algo-trading-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      APP_NAME: ${APP_NAME:-algo-trading-backend}
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+    restart: unless-stopped
+    # VPS-portable: no Hostinger-specific mounts, networks, or labels.
