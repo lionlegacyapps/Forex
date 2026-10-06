@@ -218,10 +218,28 @@ class AlpacaPaperExecutionAdapter(BrokerExecutionAdapter):
             raise ExecutionAdapterError("Alpaca authentication failed", code=AUTHENTICATION_FAILED)
         if response.status_code == 429:
             raise ExecutionAdapterError("Alpaca rate limited", code=RATE_LIMITED)
-        try:
-            data = response.json() if response.content else None
-        except ValueError as exc:
-            raise ExecutionAdapterError("Non-JSON Alpaca response", code=MALFORMED_RESPONSE) from exc
+        if not response.content:
+            data = None
+        else:
+            ctype = (response.headers.get("content-type") or "").lower()
+            try:
+                data = response.json()
+            except ValueError as exc:
+                # Alpaca returns plain-text "Not Found" on some 404s (client_order_id lookup).
+                if response.status_code == 404:
+                    data = {"message": response.text[:200]}
+                elif response.status_code >= 400:
+                    data = {"message": response.text[:200]}
+                elif "json" not in ctype:
+                    raise ExecutionAdapterError(
+                        "Non-JSON Alpaca response",
+                        code=MALFORMED_RESPONSE,
+                    ) from exc
+                else:
+                    raise ExecutionAdapterError(
+                        "Non-JSON Alpaca response",
+                        code=MALFORMED_RESPONSE,
+                    ) from exc
         return response.status_code, data
 
     async def _verify_paper_account(self) -> dict[str, Any]:
@@ -243,21 +261,36 @@ class AlpacaPaperExecutionAdapter(BrokerExecutionAdapter):
         return data
 
     async def _lookup_by_client_order_id(self, client_order_id: str) -> dict[str, Any] | None:
+        # Preferred endpoint (may 404 with plain text on some Alpaca paper deployments).
         status, data = await self._request(
             "GET",
             f"/v2/orders:by_client_order_id/{client_order_id}",
         )
-        if status == 404:
-            return None
-        if status >= 400:
-            # Ambiguous — do not POST another order
+        if status == 200 and isinstance(data, dict) and data.get("id"):
+            return data
+        if status not in {200, 404}:
             raise ExecutionAdapterError(
                 "Unable to confirm existing client_order_id before submit",
                 code=AMBIGUOUS_IDEMPOTENCY_STATE,
             )
-        if not isinstance(data, dict):
-            raise ExecutionAdapterError("Malformed order lookup", code=MALFORMED_RESPONSE)
-        return data
+
+        # Fallback: scan recent orders for matching client_order_id.
+        status2, rows = await self._request(
+            "GET",
+            "/v2/orders",
+            params={"status": "all", "limit": 100, "direction": "desc"},
+        )
+        if status2 >= 400 or not isinstance(rows, list):
+            if status == 404:
+                return None
+            raise ExecutionAdapterError(
+                "Unable to confirm existing client_order_id before submit",
+                code=AMBIGUOUS_IDEMPOTENCY_STATE,
+            )
+        for row in rows:
+            if isinstance(row, dict) and str(row.get("client_order_id") or "") == client_order_id:
+                return row
+        return None
 
     async def _buying_power_precheck(self, submission: ExecutionSubmission, account: dict[str, Any]) -> None:
         if self._skip_bp:
