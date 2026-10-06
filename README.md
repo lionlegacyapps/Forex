@@ -98,7 +98,24 @@ docs/               # additional documentation
 cp .env.example .env
 ```
 
-2. Fill in values as they become available. Never commit `.env`.
+2. Set **`DATABASE_URL` in the repository-root `.env`** to your **Supabase**
+   PostgreSQL connection string. That file is the development source of truth.
+   Never commit `.env`.
+
+3. **Precedence:** values in repository-root `.env` override stale shell
+   exports. An empty `DATABASE_URL=` in `.env` means “not configured”, even if
+   the shell still has an old local URL (e.g. `127.0.0.1/trading_dev`).
+
+4. Persistent development data lives in **Supabase PostgreSQL**, not local
+   Docker Postgres / `trading_dev`.
+
+```bash
+# connectivity (refuses local targets)
+./scripts/check-database.sh
+
+# migrate only after Supabase target confirmation
+./scripts/migrate-supabase.sh
+```
 
 | Variable | Purpose |
 |---|---|

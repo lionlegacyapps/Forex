@@ -1,6 +1,7 @@
-"""Configuration loading tests."""
+"""Configuration loading and environment-precedence tests."""
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -35,7 +36,7 @@ def test_default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.is_database_configured is False
 
 
-def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("APP_NAME", "test-platform")
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
@@ -43,7 +44,7 @@ def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://user:pass@host:5432/db")
     monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
 
-    get_settings.cache_clear()
+    # No dotenv file → process environment is used.
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
 
     assert settings.app_name == "test-platform"
@@ -57,6 +58,45 @@ def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_empty_database_url_is_not_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "   ")
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert settings.is_database_configured is False
+
+
+def test_dotenv_overrides_stale_shell_database_url(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Repo ``.env`` must win over a leftover shell DATABASE_URL."""
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://trading_app:trading_app_dev_only@127.0.0.1:5432/trading_dev",
+    )
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "DATABASE_URL=postgresql+psycopg://user:pass@db.example.supabase.co:5432/postgres\n",
+        encoding="utf-8",
+    )
+
+    settings = Settings(_env_file=env_file)  # type: ignore[call-arg]
+    assert settings.is_database_configured is True
+    assert settings.database_url is not None
+    assert "supabase.co" in settings.database_url
+    assert "127.0.0.1" not in settings.database_url
+    assert "trading_dev" not in settings.database_url
+
+
+def test_empty_dotenv_database_url_blocks_stale_shell(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Empty DATABASE_URL= in ``.env`` must not fall through to shell leftovers."""
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://trading_app:trading_app_dev_only@127.0.0.1:5432/trading_dev",
+    )
+    env_file = tmp_path / ".env"
+    env_file.write_text("DATABASE_URL=\n", encoding="utf-8")
+
+    settings = Settings(_env_file=env_file)  # type: ignore[call-arg]
     assert settings.is_database_configured is False
 
 

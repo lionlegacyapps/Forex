@@ -1,7 +1,8 @@
 """Alembic migration environment.
 
-Reads DATABASE_URL from application settings (never hard-coded). Trading
-tables are not created yet — this wires the migration tooling only.
+Reads DATABASE_URL from application settings (never hard-coded).
+Model metadata is imported from ``app.models`` so autogenerate/check
+can see the Version 1 trading schema.
 """
 
 from logging.config import fileConfig
