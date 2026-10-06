@@ -1,6 +1,9 @@
-"""Broker package — adapter contracts and simulation only for V1."""
+"""Broker package — adapter contracts, simulation, and paper execution.
 
-from app.brokers.adapters.simulation import SIMULATION_PROVIDER, SimulationBroker
-from app.brokers.base.broker import BrokerAdapter
+Import concrete modules directly to avoid circular imports, e.g.:
 
-__all__ = ["BrokerAdapter", "SimulationBroker", "SIMULATION_PROVIDER"]
+    from app.brokers.adapters.simulation import SimulationBroker
+    from app.brokers.execution.alpaca_paper import AlpacaPaperExecutionAdapter
+"""
+
+__all__: list[str] = []

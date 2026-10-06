@@ -28,6 +28,8 @@ Hostinger-specific dependencies).
   (no order execution); SimulationMarketData preserved for offline tests
 - Alpaca Paper Account Read-Path V1: read-only paper account/positions/orders via
   BrokerStateService; observational reconciliation; no order submission
+- Alpaca Paper Execution Adapter V1: controlled paper `submit_order` only through
+  Risk → Validator → Router (no live trading; opt-in mutating integration test)
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)
@@ -36,9 +38,10 @@ Hostinger-specific dependencies).
 
 ## PLANNED (not implemented)
 
-- Real broker order execution adapters (Alpaca paper/live execution, Tradovate, IBKR, …)
+- Live trading / live Alpaca execution
+- Order cancel/replace application APIs
+- Tradovate / IBKR execution
 - Strategy orchestration and automated strategies
-- Live trading modes / live execution
 - Market memory, backtesting
 - External signal ingestion (including Telegram/Discord)
 - AI-generated trade proposals
