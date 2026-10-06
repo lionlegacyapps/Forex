@@ -152,20 +152,16 @@ async def test_reject_zero_and_negative_quantity(db_session: Session) -> None:
     make_global_policy(db_session, require_stop_loss=False)
 
     for qty in (Decimal("0"), Decimal("-5")):
-        # Bypass ORM CHECK by evaluating risk on an in-memory-ish path:
-        # create via service still hits DB CHECK for quantity > 0.
-        # Exercise RiskEngine directly with a flushed proposal that we mutate
-        # after load is not possible due to CHECK — so call engine with a
-        # detached-style object constructed then added only for engine unit
-        # evaluation using pending row that fails DB. Instead call evaluate
-        # on a proposal created with positive qty then patched.
         proposal = _service(db_session).create_proposal(
             valid_limit_proposal(account, quantity=Decimal("1"), stop_loss_price=None)
         )
-        proposal.quantity = qty
-        decision = RiskEngine(db_session).evaluate(proposal)
+        # Avoid autoflush UPDATE hitting DB CHECK; RiskEngine must still reject.
+        with db_session.no_autoflush:
+            proposal.quantity = qty
+            decision = RiskEngine(db_session).evaluate(proposal)
         assert decision.approved is False
         assert decision.reason_code == codes.QUANTITY_INVALID
+        db_session.expire(proposal)
 
 
 @pytest.mark.asyncio
