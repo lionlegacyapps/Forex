@@ -7,7 +7,16 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
@@ -32,6 +41,29 @@ class Position(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ),
         Index("ix_positions_account_status", "broker_account_id", "status"),
         Index("ix_positions_symbol_status", "symbol", "status"),
+        # One open position per account+strategy+symbol+asset_class.
+        # Allows multiple strategies to trade the same symbol concurrently.
+        Index(
+            "uq_positions_open_account_strategy_symbol_asset",
+            "broker_account_id",
+            "strategy_id",
+            "symbol",
+            "asset_class",
+            unique=True,
+            postgresql_where=text("status = 'open'"),
+        ),
+        CheckConstraint(
+            "average_entry_price >= 0 AND (current_price IS NULL OR current_price >= 0)",
+            name="ck_positions_prices_non_negative",
+        ),
+        CheckConstraint(
+            "("
+            "  (status = 'open' AND closed_at IS NULL AND quantity <> 0)"
+            "  OR (status = 'closed' AND closed_at IS NOT NULL)"
+            "  OR (status = 'flattening')"
+            ")",
+            name="ck_positions_open_closed_consistent",
+        ),
     )
 
     broker_account_id: Mapped[uuid.UUID] = mapped_column(
@@ -39,9 +71,10 @@ class Position(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("broker_accounts.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    # RESTRICT preserves historical interpretability of positions.
     strategy_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("strategies.id", ondelete="SET NULL"),
+        ForeignKey("strategies.id", ondelete="RESTRICT"),
         nullable=True,
     )
     symbol: Mapped[str] = mapped_column(String(64), nullable=False)

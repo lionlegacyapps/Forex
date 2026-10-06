@@ -1,4 +1,4 @@
-"""Application-level enumerations for the Version 1 trading schema.
+"""Application-level enumerations for the trading schema.
 
 Stored as VARCHAR with CHECK constraints (native_enum=False) so future
 value additions do not require fragile PostgreSQL ALTER TYPE migrations.
@@ -12,6 +12,13 @@ from enum import StrEnum
 class TradingMode(StrEnum):
     PAPER = "paper"
     LIVE = "live"
+
+
+class AccountType(StrEnum):
+    CASH = "cash"
+    MARGIN = "margin"
+    FUTURES = "futures"
+    OTHER = "other"
 
 
 class StrategyStatus(StrEnum):
@@ -52,6 +59,15 @@ class TradeProposalStatus(StrEnum):
     SUBMITTED = "submitted"
     CANCELLED = "cancelled"
     EXPIRED = "expired"
+
+
+class ProposalSource(StrEnum):
+    STRATEGY = "strategy"
+    AI = "ai"
+    TELEGRAM = "telegram"
+    DISCORD = "discord"
+    MANUAL = "manual"
+    EXTERNAL = "external"
 
 
 class OrderStatus(StrEnum):

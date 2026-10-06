@@ -51,12 +51,12 @@ class MarketMemoryEvent(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     source: Mapped[str] = mapped_column(String(64), nullable=False)
     strategy_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("strategies.id", ondelete="SET NULL"),
+        ForeignKey("strategies.id", ondelete="RESTRICT"),
         nullable=True,
     )
     trade_proposal_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("trade_proposals.id", ondelete="SET NULL"),
+        ForeignKey("trade_proposals.id", ondelete="RESTRICT"),
         nullable=True,
     )
     outcome: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)

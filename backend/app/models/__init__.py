@@ -1,13 +1,15 @@
-"""ORM models package — Version 1 trading schema."""
+"""ORM models package — Version 1 trading schema (hardened)."""
 
 from app.db.base import Base
 from app.models.audit_event import AuditEvent
 from app.models.broker_account import BrokerAccount
 from app.models.enums import (
+    AccountType,
     AssetClass,
     OrderStatus,
     OrderType,
     PositionStatus,
+    ProposalSource,
     RiskScopeType,
     StrategyStatus,
     TimeInForce,
@@ -25,6 +27,7 @@ from app.models.strategy_account_assignment import StrategyAccountAssignment
 from app.models.trade_proposal import TradeProposal
 
 __all__ = [
+    "AccountType",
     "AssetClass",
     "AuditEvent",
     "Base",
@@ -36,6 +39,7 @@ __all__ = [
     "OrderType",
     "Position",
     "PositionStatus",
+    "ProposalSource",
     "RiskPolicy",
     "RiskScopeType",
     "Strategy",

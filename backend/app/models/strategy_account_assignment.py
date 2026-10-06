@@ -6,7 +6,15 @@ import uuid
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    Numeric,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
@@ -28,6 +36,13 @@ class StrategyAccountAssignment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "broker_account_id",
             name="uq_strategy_account_assignment",
         ),
+        CheckConstraint(
+            "(capital_allocation IS NULL OR capital_allocation >= 0)"
+            " AND (max_position_size IS NULL OR max_position_size > 0)"
+            " AND (daily_loss_limit IS NULL OR daily_loss_limit >= 0)"
+            " AND (max_concurrent_positions IS NULL OR max_concurrent_positions > 0)",
+            name="ck_strategy_account_assignments_limits_valid",
+        ),
     )
 
     strategy_id: Mapped[uuid.UUID] = mapped_column(
@@ -42,7 +57,13 @@ class StrategyAccountAssignment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    # Fail-closed: assignments require explicit enabling.
+    is_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
     trading_mode: Mapped[TradingMode] = mapped_column(
         str_enum_column(TradingMode, name="assignment_trading_mode"),
         nullable=False,

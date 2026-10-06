@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text
+from sqlalchemy import CheckConstraint, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -21,11 +21,20 @@ if TYPE_CHECKING:
 
 class Strategy(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "strategies"
+    __table_args__ = (
+        UniqueConstraint("name", "version", name="uq_strategies_name_version"),
+        CheckConstraint("btrim(name) <> ''", name="ck_strategies_name_not_blank"),
+    )
 
-    name: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     strategy_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    version: Mapped[str] = mapped_column(String(32), nullable=False, default="0.1.0", server_default="0.1.0")
+    version: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="0.1.0",
+        server_default="0.1.0",
+    )
     status: Mapped[StrategyStatus] = mapped_column(
         str_enum_column(StrategyStatus, name="strategy_status"),
         nullable=False,

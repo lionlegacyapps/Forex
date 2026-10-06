@@ -6,13 +6,20 @@ import uuid
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
 from app.db.base import Base
-from app.models.enums import AssetClass, OrderType, TimeInForce, TradeProposalStatus, TradeSide
+from app.models.enums import (
+    AssetClass,
+    OrderType,
+    ProposalSource,
+    TimeInForce,
+    TradeProposalStatus,
+    TradeSide,
+)
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.types import str_enum_column
 
@@ -26,14 +33,32 @@ if TYPE_CHECKING:
 class TradeProposal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "trade_proposals"
     __table_args__ = (
+        UniqueConstraint(
+            "id",
+            "broker_account_id",
+            name="uq_trade_proposals_id_broker_account_id",
+        ),
         Index("ix_trade_proposals_broker_account_status", "broker_account_id", "status"),
         Index("ix_trade_proposals_strategy_created", "strategy_id", "created_at"),
         Index("ix_trade_proposals_symbol_created", "symbol", "created_at"),
+        CheckConstraint("quantity > 0", name="ck_trade_proposals_quantity_positive"),
+        CheckConstraint(
+            "(limit_price IS NULL OR limit_price >= 0)"
+            " AND (stop_price IS NULL OR stop_price >= 0)"
+            " AND (take_profit_price IS NULL OR take_profit_price >= 0)"
+            " AND (stop_loss_price IS NULL OR stop_loss_price >= 0)",
+            name="ck_trade_proposals_prices_non_negative",
+        ),
+        CheckConstraint(
+            "(source <> 'strategy') OR (strategy_id IS NOT NULL)",
+            name="ck_trade_proposals_strategy_source",
+        ),
     )
 
+    # RESTRICT: strategies with historical proposals cannot be hard-deleted.
     strategy_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("strategies.id", ondelete="SET NULL"),
+        ForeignKey("strategies.id", ondelete="RESTRICT"),
         nullable=True,
     )
     broker_account_id: Mapped[uuid.UUID] = mapped_column(
@@ -41,7 +66,11 @@ class TradeProposal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("broker_accounts.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    source: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source: Mapped[ProposalSource] = mapped_column(
+        str_enum_column(ProposalSource, name="trade_proposal_source"),
+        nullable=False,
+        index=True,
+    )
     symbol: Mapped[str] = mapped_column(String(64), nullable=False)
     asset_class: Mapped[AssetClass] = mapped_column(
         str_enum_column(AssetClass, name="trade_proposal_asset_class"),
@@ -57,8 +86,11 @@ class TradeProposal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     quantity: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
     limit_price: Mapped[Decimal | None] = mapped_column(Numeric(24, 8), nullable=True)
+    # Entry stop/stop-limit trigger (order-type dependent).
     stop_price: Mapped[Decimal | None] = mapped_column(Numeric(24, 8), nullable=True)
     take_profit_price: Mapped[Decimal | None] = mapped_column(Numeric(24, 8), nullable=True)
+    # Protective exit level for the resulting position plan (not the same as stop_price).
+    stop_loss_price: Mapped[Decimal | None] = mapped_column(Numeric(24, 8), nullable=True)
     time_in_force: Mapped[TimeInForce] = mapped_column(
         str_enum_column(TimeInForce, name="trade_proposal_tif"),
         nullable=False,
@@ -84,7 +116,10 @@ class TradeProposal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     strategy: Mapped[Strategy | None] = relationship(back_populates="trade_proposals")
     broker_account: Mapped[BrokerAccount] = relationship(back_populates="trade_proposals")
-    orders: Mapped[list[Order]] = relationship(back_populates="trade_proposal")
+    orders: Mapped[list[Order]] = relationship(
+        back_populates="trade_proposal",
+        foreign_keys="Order.trade_proposal_id",
+    )
     market_memory_events: Mapped[list[MarketMemoryEvent]] = relationship(
         back_populates="trade_proposal",
     )
