@@ -69,10 +69,14 @@ class Settings(BaseSettings):
     # Simulation V1 starting cash (not real broker buying power).
     simulation_starting_cash: str = "100000"
 
-    # Market data (read-only). Never log these values.
+    # Alpaca credentials (read-only market data + paper account reads).
+    # Never log these values. Never store them in broker_accounts.
     alpaca_api_key: str | None = None
     alpaca_api_secret: str | None = None
     alpaca_data_base_url: str = "https://data.alpaca.markets"
+    # Paper trading API only — live api.alpaca.markets is forbidden by code.
+    alpaca_paper_base_url: str = "https://paper-api.alpaca.markets"
+    alpaca_paper_timeout_seconds: float = 10.0
     market_data_timeout_seconds: float = 5.0
     market_data_quote_max_age_seconds: int = 30
     market_data_trade_max_age_seconds: int = 60

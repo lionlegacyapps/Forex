@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.broker_state.risk_bridge import VerifiedBrokerState
 from app.core.config import get_settings
 from app.market_data.errors import MarketDataError
 from app.market_data.service import MarketDataService
@@ -39,11 +40,15 @@ class RiskEngine:
         market_data_service: MarketDataService | None = None,
         daily_pnl: DailyPnlService | None = None,
         exposure: ExposureService | None = None,
+        broker_state: VerifiedBrokerState | None = None,
     ) -> None:
         self._session = session
         self._resolver = policy_resolver or RiskPolicyResolver(session)
         self._market = market_data or default_simulation_market_data
         self._mds = market_data_service
+        # Optional verified broker snapshot for future buying-power / open-order
+        # checks. V1 does not replace internal accounting with broker values.
+        self._broker_state = broker_state
         tz = get_settings().trading_day_timezone
         self._daily_pnl = daily_pnl or DailyPnlService(session, trading_timezone=tz)
         self._exposure = exposure or ExposureService(
@@ -51,6 +56,11 @@ class RiskEngine:
             market_data=self._market,
             market_data_service=self._mds,
         )
+
+    @property
+    def broker_state(self) -> VerifiedBrokerState | None:
+        """Verified external broker state if provided (read-only foundation)."""
+        return self._broker_state
 
     def evaluate(self, proposal: TradeProposal) -> RiskDecision:
         checks: list[RiskCheckResult] = []
