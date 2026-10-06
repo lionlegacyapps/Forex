@@ -1,6 +1,7 @@
 """In-process SimulationBroker — ZERO external network calls.
 
-Accepts PAPER orders only. Does not fabricate fills or market prices.
+Uses SimulationMarketData for quotes/fills. Never fabricates prices.
+SIMULATION RESULTS DO NOT REPRESENT REAL MARKET EXECUTION.
 """
 
 from __future__ import annotations
@@ -23,29 +24,44 @@ from app.brokers.base.types import (
     Trade,
 )
 from app.core.exceptions import BrokerError
+from app.trading.execution.cash_ledger import SimulatedCashLedger, default_cash_ledger
+from app.trading.execution.market_data import SimulationMarketData, default_simulation_market_data
 
 SIMULATION_PROVIDER = "simulation"
 UNSUPPORTED = "SIMULATION_CAPABILITY_UNAVAILABLE"
+PRICE_UNAVAILABLE = "PRICE_UNAVAILABLE"
 
 
 class SimulationBroker(BrokerAdapter):
-    """Deterministic paper simulation adapter.
+    """Deterministic paper simulation adapter."""
 
-    Network policy: this class must never import or call HTTP clients,
-    sockets, or broker SDKs. All state is in-process memory.
-    """
-
-    def __init__(self, *, account_ref: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        account_ref: str | None = None,
+        market_data: SimulationMarketData | None = None,
+        cash_ledger: SimulatedCashLedger | None = None,
+        account_id: uuid.UUID | None = None,
+        starting_cash: Decimal = Decimal("100000"),
+    ) -> None:
         self._account_ref = account_ref or "sim-account"
         self._orders: dict[str, Order] = {}
-        self._cash = Decimal("0")
+        self._market = market_data or default_simulation_market_data
+        self._cash = cash_ledger or default_cash_ledger
+        self._account_id = account_id
+        self._starting_cash = starting_cash
+        if account_id is not None:
+            self._cash.ensure_account(account_id, starting_cash=starting_cash)
 
     @property
     def provider_name(self) -> str:
         return SIMULATION_PROVIDER
 
+    @property
+    def market_data(self) -> SimulationMarketData:
+        return self._market
+
     async def place_order(self, request: OrderRequest) -> Order:
-        # Refuse any hint of live intent in metadata.
         mode = (request.metadata or {}).get("trading_mode", "paper")
         if str(mode).lower() != "paper":
             raise BrokerError(
@@ -72,8 +88,7 @@ class SimulationBroker(BrokerAdapter):
             raw={
                 "provider": SIMULATION_PROVIDER,
                 "simulated": True,
-                "fill": None,
-                "note": "Accepted; not auto-filled without deterministic pricing",
+                "note": "Accepted by simulation; durable fill handled by PaperExecutionService",
             },
         )
         self._orders[broker_order_id] = order
@@ -110,28 +125,46 @@ class SimulationBroker(BrokerAdapter):
         return [o for o in orders if o.status.value == status]
 
     async def get_balance(self) -> Balance:
+        if self._account_id is None:
+            cash = self._starting_cash
+        else:
+            cash = self._cash.get_cash(self._account_id)
         return Balance(
-            cash=self._cash,
-            equity=self._cash,
+            cash=cash,
+            equity=cash,
             currency="USD",
-            raw={"simulated": True, "note": "No external balance feed"},
+            raw={"simulated": True, "model": "cash_equals_equity_v1"},
         )
 
     async def get_buying_power(self) -> BuyingPower:
+        if self._account_id is None:
+            bp = self._starting_cash
+        else:
+            bp = self._cash.get_buying_power(self._account_id)
         return BuyingPower(
-            buying_power=self._cash,
+            buying_power=bp,
             currency="USD",
-            raw={"simulated": True, "note": "No external buying-power feed"},
+            raw={"simulated": True, "model": "buying_power_equals_cash_v1"},
         )
 
     async def get_quote(self, symbol: str) -> Quote:
+        price = self._market.get_price(symbol)
+        if price is None:
+            return Quote(
+                symbol=symbol,
+                bid=None,
+                ask=None,
+                last=None,
+                timestamp=None,
+                raw={"available": False, "reason": PRICE_UNAVAILABLE, "simulated": True},
+            )
         return Quote(
             symbol=symbol,
-            bid=None,
-            ask=None,
-            last=None,
-            timestamp=None,
-            raw={"available": False, "reason": UNSUPPORTED},
+            bid=price,
+            ask=price,
+            last=price,
+            timestamp=datetime.now(UTC),
+            raw={"available": True, "simulated": True, "source": "SimulationMarketData"},
         )
 
     async def get_bars(

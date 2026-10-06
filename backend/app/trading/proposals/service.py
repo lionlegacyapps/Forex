@@ -6,7 +6,7 @@ Risk Engine + Order Validator succeed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.audit import service as audit_events
 from app.audit.service import AuditService
 from app.models.enums import TradeProposalStatus
 from app.models.trade_proposal import TradeProposal
+from app.trading.execution.market_data import SimulationMarketData, default_simulation_market_data
 from app.trading.proposals.schemas import CreateTradeProposalInput, PipelineResult
 from app.trading.proposals.transitions import assert_proposal_transition
 from app.trading.risk import codes
@@ -32,13 +33,18 @@ class TradeProposalService:
     order_validator: OrderValidator | None = None
     broker_router: BrokerRouter | None = None
     audit: AuditService | None = None
+    market_data: SimulationMarketData | None = None
 
     def __post_init__(self) -> None:
-        self.risk_engine = self.risk_engine or RiskEngine(self.session)
-        self.order_validator = self.order_validator or OrderValidator(self.session)
+        market = self.market_data or default_simulation_market_data
+        self.market_data = market
         self.audit = self.audit or AuditService(self.session)
+        self.risk_engine = self.risk_engine or RiskEngine(
+            self.session, market_data=market
+        )
+        self.order_validator = self.order_validator or OrderValidator(self.session)
         self.broker_router = self.broker_router or BrokerRouter(
-            self.session, audit=self.audit
+            self.session, audit=self.audit, market_data=market
         )
 
     def create_proposal(self, data: CreateTradeProposalInput) -> TradeProposal:

@@ -41,6 +41,9 @@ filesystems. The VPS is replaceable compute.
 
 - Foundation + Version 1 database schema (hardened)
 - Trading Safety Pipeline V1 (proposal → risk → validate → route → simulation)
+- Paper Execution & Portfolio Accounting V1 (sim fills, positions, P&L, risk feedback)
+
+See [paper-execution-accounting-v1.md](./paper-execution-accounting-v1.md).
 
 Not implemented: real broker adapters, live trading, automated strategies,
 market-data feeds, AI, backtesting, Telegram/Discord, or frontend.
