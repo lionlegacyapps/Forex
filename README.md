@@ -17,7 +17,9 @@ Hostinger-specific dependencies).
 - SQLAlchemy engine/session architecture for Supabase PostgreSQL via `DATABASE_URL`
   (psycopg3 driver, TLS for remote hosts; starts without `DATABASE_URL`)
 - Alembic migration tooling wired from app settings
-- Version 1 trading schema (models + migration `111d98cf92b8`) — tables only
+- Version 1 trading schema (models + migrations `111d98cf92b8` → `a86f3472f808`)
+  with fail-closed defaults (PAPER + DISABLED), composite order/proposal account
+  integrity, and defense-in-depth CHECK constraints
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)
