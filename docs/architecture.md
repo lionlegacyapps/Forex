@@ -47,9 +47,12 @@ filesystems. The VPS is replaceable compute.
   observational reconciliation; **no** order execution)
 - Alpaca Paper Execution Adapter V1 (controlled paper `submit_order` only via
   Risk → Validator → Router; **no** live trading)
+- Alpaca Paper Order Lifecycle V1 (status sync, partial fills, controlled
+  cancel, fill→accounting, reconciliation)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
-and [alpaca-paper-execution-adapter-v1.md](./alpaca-paper-execution-adapter-v1.md).
+[alpaca-paper-execution-adapter-v1.md](./alpaca-paper-execution-adapter-v1.md),
+and [alpaca-paper-order-lifecycle-v1.md](./alpaca-paper-order-lifecycle-v1.md).
 
-Not implemented: live trading, Tradovate, cancel/replace APIs, strategies, AI, frontend.
+Not implemented: live trading, Tradovate, cancel-all, strategies, AI, frontend.
