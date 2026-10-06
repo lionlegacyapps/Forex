@@ -110,8 +110,9 @@ class AlpacaPaperExecutionAdapter(BrokerExecutionAdapter):
     def submit_post_count(self) -> int:
         return self._submit_post_count
 
-    # Intentionally NO: cancel_order, replace_order, modify_order, close_position
-    # Intentionally NO: public .client
+# Intentionally NO: cancel_order, cancel_all_orders, replace_order, modify_order, close_position
+# Intentionally NO: public .client
+# Lifecycle cancel is ``request_paper_cancel`` (single order id) for ControlledCancellationService only.
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -204,6 +205,25 @@ class AlpacaPaperExecutionAdapter(BrokerExecutionAdapter):
                         )
                     self._submit_post_count += 1
                     response = await client.post(url, headers=self._headers(), json=json_body)
+                elif method == "DELETE":
+                    # Exact single-order cancel only — never /v2/orders (cancel-all).
+                    if path == "/v2/orders" or path.rstrip("/") == "/v2/orders":
+                        raise ExecutionAdapterError(
+                            "cancel_all_orders is forbidden",
+                            code=SUBMIT_FORBIDDEN,
+                        )
+                    if not path.startswith("/v2/orders/"):
+                        raise ExecutionAdapterError(
+                            f"DELETE only allowed for /v2/orders/{{id}}; got {path}",
+                            code=SUBMIT_FORBIDDEN,
+                        )
+                    rest = path[len("/v2/orders/") :]
+                    if not rest or "/" in rest or rest.lower() in {"", "all"}:
+                        raise ExecutionAdapterError(
+                            "Invalid cancel path",
+                            code=SUBMIT_FORBIDDEN,
+                        )
+                    response = await client.delete(url, headers=self._headers())
                 else:
                     raise ExecutionAdapterError(
                         f"HTTP method {method} not allowed on execution adapter",
@@ -444,3 +464,52 @@ class AlpacaPaperExecutionAdapter(BrokerExecutionAdapter):
 
     async def get_order_by_client_order_id(self, client_order_id: str) -> dict[str, Any] | None:
         return await self._lookup_by_client_order_id(client_order_id)
+
+    async def get_fills_for_order(self, broker_order_id: str) -> list[dict[str, Any]]:
+        """Fetch FILL activities for one order (durable activity ids when present)."""
+        oid = (broker_order_id or "").strip()
+        if not oid:
+            return []
+        status, data = await self._request(
+            "GET",
+            "/v2/account/activities",
+            params={"activity_types": "FILL", "page_size": 100},
+        )
+        if status >= 400 or not isinstance(data, list):
+            return []
+        out: list[dict[str, Any]] = []
+        for row in data:
+            if not isinstance(row, dict):
+                continue
+            if str(row.get("order_id") or "") != oid:
+                continue
+            # Normalize durable id
+            aid = str(row.get("id") or "").strip()
+            if not aid:
+                continue
+            out.append(row)
+        return out
+
+    async def request_paper_cancel(self, broker_order_id: str) -> dict[str, Any]:
+        """Lifecycle-only cancel of ONE paper order by broker id.
+
+        Not a general ``cancel_order`` / ``cancel_all_orders`` API.
+        Callers must be ControlledCancellationService (ownership already checked).
+        """
+        oid = (broker_order_id or "").strip()
+        if not oid or "/" in oid:
+            raise ExecutionAdapterError("Invalid broker_order_id", code=SUBMIT_FORBIDDEN)
+        assert_paper_base_url(self._base_url)
+        status, data = await self._request("DELETE", f"/v2/orders/{oid}")
+        if status in {200, 204}:
+            if isinstance(data, dict):
+                return data
+            # 204 empty — fetch current state
+            return await self.get_order_by_id(oid)
+        msg = ""
+        if isinstance(data, dict):
+            msg = str(data.get("message") or data.get("error") or "")
+        raise ExecutionAdapterError(
+            f"Paper cancel failed HTTP {status}: {msg or 'unknown'}",
+            code=ORDER_REJECTED_BY_BROKER,
+        )

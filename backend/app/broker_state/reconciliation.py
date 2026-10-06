@@ -23,6 +23,7 @@ from app.broker_state.models import (
     ReconciliationReport,
 )
 from app.models.enums import PositionStatus
+from app.models.execution import Execution
 from app.models.order import Order
 from app.models.position import Position
 
@@ -192,6 +193,35 @@ class ReconciliationEngine:
                         message=f"Order {bo.broker_order_id} matches",
                         symbol=bo.symbol,
                         broker_order_id=bo.broker_order_id,
+                    )
+                )
+
+            # Fill quantity / missing execution checks
+            execs = self._session.scalars(
+                select(Execution).where(Execution.order_id == io.id)
+            ).all()
+            internal_filled = sum((e.quantity for e in execs), Decimal("0"))
+            broker_filled = bo.filled_quantity or Decimal("0")
+            if broker_filled > 0 and len(execs) == 0:
+                findings.append(
+                    ReconciliationFinding(
+                        category=ReconciliationCategory.MISSING_EXECUTION,
+                        message=f"Broker filled qty without internal executions for {bo.broker_order_id}",
+                        symbol=bo.symbol,
+                        broker_order_id=bo.broker_order_id,
+                        broker_value=str(broker_filled),
+                        internal_value="0",
+                    )
+                )
+            elif internal_filled != broker_filled:
+                findings.append(
+                    ReconciliationFinding(
+                        category=ReconciliationCategory.FILL_QUANTITY_MISMATCH,
+                        message=f"Filled quantity mismatch for {bo.broker_order_id}",
+                        symbol=bo.symbol,
+                        broker_order_id=bo.broker_order_id,
+                        internal_value=str(internal_filled),
+                        broker_value=str(broker_filled),
                     )
                 )
 

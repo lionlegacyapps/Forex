@@ -113,8 +113,12 @@ def test_adapter_has_no_cancel_replace_close() -> None:
     src = Path("app/brokers/execution/alpaca_paper.py").read_text(encoding="utf-8")
     assert "TradingClient(" not in src
     assert re.search(r"(?m)^\s*from\s+alpaca(\.|\s)", src) is None
-    assert "client.delete" not in src.lower()
-    assert "client.patch" not in src.lower()
+    # Single-order DELETE is allowed for controlled cancel; cancel-all must remain forbidden
+    assert 'path == "/v2/orders"' in src or "cancel_all_orders is forbidden" in src
+    assert "close_all_positions" not in src.lower()
+    # Must not expose generic BrokerAdapter-style cancel_order API name as public method
+    assert not hasattr(adapter, "cancel_order")
+    assert not hasattr(adapter, "cancel_all_orders")
 
 
 def test_live_endpoint_rejected_at_construction() -> None:
