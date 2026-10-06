@@ -40,10 +40,11 @@ filesystems. The VPS is replaceable compute.
 ## Current scope
 
 - Foundation + Version 1 database schema (hardened)
-- Trading Safety Pipeline V1 (proposal → risk → validate → route → simulation)
-- Paper Execution & Portfolio Accounting V1 (sim fills, positions, P&L, risk feedback)
+- Trading Safety Pipeline V1
+- Paper Execution & Portfolio Accounting V1
+- Market Data Provider V1 (read-only; Alpaca data API optional)
 
-See [paper-execution-accounting-v1.md](./paper-execution-accounting-v1.md).
+See [market-data-provider-v1.md](./market-data-provider-v1.md).
 
-Not implemented: real broker adapters, live trading, automated strategies,
-market-data feeds, AI, backtesting, Telegram/Discord, or frontend.
+Not implemented: real broker order execution, live trading, Tradovate,
+automated strategies, AI, frontend.

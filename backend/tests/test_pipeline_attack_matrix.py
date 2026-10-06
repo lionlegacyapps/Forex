@@ -227,11 +227,12 @@ async def test_max_order_value_not_evaluated_without_price(db_session: Session) 
     service = _service(db_session)
     proposal = service.create_proposal(payload)
     decision = service.evaluate_risk(proposal)
-    # Market order cannot compute value without fabricating price — recorded,
-    # and PAPER path may still approve other checks.
-    assert any(
-        c.reason_code == codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED for c in decision.checks
-    )
+    # Required limit without price → fail-closed (not PASS).
+    assert decision.approved is False
+    assert decision.reason_code in {
+        codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED,
+        codes.PRICE_UNAVAILABLE,
+    }
 
 
 @pytest.mark.asyncio

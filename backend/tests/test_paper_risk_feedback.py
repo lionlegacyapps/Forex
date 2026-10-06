@@ -182,9 +182,11 @@ async def test_market_order_value_with_and_without_sim_price(
     )
     p = service.create_proposal(payload)
     d = service.evaluate_risk(p)
-    assert any(
-        c.reason_code == codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED for c in d.checks
-    )
+    assert d.approved is False
+    assert d.reason_code in {
+        codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED,
+        codes.PRICE_UNAVAILABLE,
+    }
 
     market.set_price("AAPL", Decimal("100"))
     p2 = service.create_proposal(payload)

@@ -24,6 +24,8 @@ Hostinger-specific dependencies).
   → BrokerRouter → SimulationBroker (PAPER only; zero real-broker network calls)
 - Paper Execution & Portfolio Accounting V1: deterministic sim fills, positions,
   realized/unrealized P&L, exposure, daily PnL → Risk Engine feedback
+- Market Data Provider V1: read-only MarketDataService + Alpaca data API provider
+  (no order execution); SimulationMarketData preserved for offline tests
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)

@@ -11,6 +11,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.market_data.errors import MarketDataError
+from app.market_data.service import MarketDataService
 from app.models.broker_account import BrokerAccount
 from app.models.enums import PositionStatus, StrategyStatus, TradingMode
 from app.models.position import Position
@@ -34,15 +36,21 @@ class RiskEngine:
         *,
         policy_resolver: RiskPolicyResolver | None = None,
         market_data: SimulationMarketData | None = None,
+        market_data_service: MarketDataService | None = None,
         daily_pnl: DailyPnlService | None = None,
         exposure: ExposureService | None = None,
     ) -> None:
         self._session = session
         self._resolver = policy_resolver or RiskPolicyResolver(session)
         self._market = market_data or default_simulation_market_data
+        self._mds = market_data_service
         tz = get_settings().trading_day_timezone
         self._daily_pnl = daily_pnl or DailyPnlService(session, trading_timezone=tz)
-        self._exposure = exposure or ExposureService(session, market_data=self._market)
+        self._exposure = exposure or ExposureService(
+            session,
+            market_data=self._market,
+            market_data_service=self._mds,
+        )
 
     def evaluate(self, proposal: TradeProposal) -> RiskDecision:
         checks: list[RiskCheckResult] = []
@@ -344,11 +352,22 @@ class RiskEngine:
             message="Quantity within max_position_size",
         )
 
-    def _deterministic_order_price(self, proposal: TradeProposal) -> Decimal | None:
+    def _deterministic_order_price(
+        self, proposal: TradeProposal
+    ) -> tuple[Decimal | None, str | None]:
+        """Return (price, error_code). Prefer limit, then MarketDataService, then sim board."""
         if proposal.limit_price is not None:
-            return proposal.limit_price
-        # Simulation price may evaluate MARKET (and others) when configured.
-        return self._market.get_price(proposal.symbol)
+            return proposal.limit_price, None
+        if self._mds is not None:
+            try:
+                ref = self._mds.sync_reference_price(proposal.symbol)
+                return ref.price, None
+            except MarketDataError as exc:
+                return None, exc.code
+        price = self._market.get_price(proposal.symbol)
+        if price is None:
+            return None, codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED
+        return price, None
 
     def _check_max_order_value(
         self,
@@ -362,15 +381,17 @@ class RiskEngine:
                 message="No max_order_value configured",
             )
 
-        price = self._deterministic_order_price(proposal)
+        price, err = self._deterministic_order_price(proposal)
         if price is None:
+            # Required financial limit cannot be evaluated → fail closed.
+            code = err or codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED
             return RiskCheckResult(
                 name="max_order_value",
-                status=CheckStatus.NOT_EVALUATED_MARKET_PRICE_REQUIRED,
-                reason_code=codes.NOT_EVALUATED_MARKET_PRICE_REQUIRED,
+                status=CheckStatus.FAILED,
+                reason_code=code,
                 message=(
-                    "max_order_value configured but no deterministic price "
-                    "(limit or simulation) available"
+                    "max_order_value configured but no reliable price available; "
+                    "fail-closed (not treated as PASS)"
                 ),
             )
 
@@ -510,9 +531,12 @@ class RiskEngine:
         if not current.complete or incremental is None:
             return RiskCheckResult(
                 name="max_total_exposure",
-                status=CheckStatus.NOT_EVALUATED_MARKET_PRICE_REQUIRED,
-                reason_code=codes.NOT_EVALUATED_PRICE_REQUIRED,
-                message="max_total_exposure cannot be evaluated without simulation prices",
+                status=CheckStatus.FAILED,
+                reason_code=current.reason_code or codes.NOT_EVALUATED_PRICE_REQUIRED,
+                message=(
+                    "max_total_exposure cannot be evaluated without reliable prices; "
+                    "fail-closed"
+                ),
             )
 
         projected = current.gross_notional + incremental

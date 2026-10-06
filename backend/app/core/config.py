@@ -69,6 +69,14 @@ class Settings(BaseSettings):
     # Simulation V1 starting cash (not real broker buying power).
     simulation_starting_cash: str = "100000"
 
+    # Market data (read-only). Never log these values.
+    alpaca_api_key: str | None = None
+    alpaca_api_secret: str | None = None
+    alpaca_data_base_url: str = "https://data.alpaca.markets"
+    market_data_timeout_seconds: float = 5.0
+    market_data_quote_max_age_seconds: int = 30
+    market_data_trade_max_age_seconds: int = 60
+
     supabase_url: str | None = None
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None

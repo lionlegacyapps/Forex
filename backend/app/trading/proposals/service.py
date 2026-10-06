@@ -14,6 +14,7 @@ from app.audit import service as audit_events
 from app.audit.service import AuditService
 from app.models.enums import TradeProposalStatus
 from app.models.trade_proposal import TradeProposal
+from app.market_data.service import MarketDataService
 from app.trading.execution.market_data import SimulationMarketData, default_simulation_market_data
 from app.trading.proposals.schemas import CreateTradeProposalInput, PipelineResult
 from app.trading.proposals.transitions import assert_proposal_transition
@@ -34,13 +35,16 @@ class TradeProposalService:
     broker_router: BrokerRouter | None = None
     audit: AuditService | None = None
     market_data: SimulationMarketData | None = None
+    market_data_service: MarketDataService | None = None
 
     def __post_init__(self) -> None:
         market = self.market_data or default_simulation_market_data
         self.market_data = market
         self.audit = self.audit or AuditService(self.session)
         self.risk_engine = self.risk_engine or RiskEngine(
-            self.session, market_data=market
+            self.session,
+            market_data=market,
+            market_data_service=self.market_data_service,
         )
         self.order_validator = self.order_validator or OrderValidator(self.session)
         self.broker_router = self.broker_router or BrokerRouter(
