@@ -1,1 +1,177 @@
-# Forex
+# Algorithmic Trading Platform — Backend
+
+Private algorithmic trading platform backend. Persistent data targets
+**Supabase PostgreSQL**. Designed to run on a generic Ubuntu VPS (no
+Hostinger-specific dependencies).
+
+---
+
+## CURRENTLY IMPLEMENTED
+
+- Modular FastAPI application skeleton
+- `GET /health` liveness endpoint (does not require the database)
+- `GET /health/database` connectivity probe (`SELECT 1`; no secrets in response)
+- Environment-variable configuration (`pydantic-settings`, loads repo-root `.env`)
+- Structured logging foundation
+- Application exception hierarchy
+- SQLAlchemy engine/session architecture for Supabase PostgreSQL via `DATABASE_URL`
+  (psycopg3 driver, TLS for remote hosts; starts without `DATABASE_URL`)
+- Alembic migration tooling wired from app settings (no trading tables yet)
+- `scripts/check-database.sh` safe connectivity check
+- Abstract `BrokerAdapter` contract and shared broker types
+- Empty module boundaries for the future trading pipeline, strategies,
+  market data, market memory, signals, backtesting, and audit
+- Docker + Docker Compose for the API service only
+- Basic pytest coverage (startup, health, config)
+
+## PLANNED (not implemented)
+
+- Broker adapters (Alpaca, Tradovate, Interactive Brokers, …)
+- Strategy orchestration and automated strategies
+- Trade proposals, risk engine, order validator, broker router, execution
+- Paper / live trading modes
+- Market-data integrations, market memory, backtesting
+- External signal ingestion (including Telegram/Discord)
+- AI-generated trade proposals
+- Supabase schema / trading tables
+- Frontend
+
+---
+
+## Architecture overview
+
+Future automated order flow (module boundaries exist; logic does not):
+
+```
+Signal / Strategy
+  → Strategy Orchestrator
+  → Trade Proposal
+  → Risk Engine
+  → Order Validator
+  → Broker Router
+  → Broker Adapter
+  → Broker API
+```
+
+**Safety rule:** strategies, AI models, and external signals must never
+call a broker adapter directly. All orders go through the pipeline above.
+
+### Project layout
+
+```
+backend/
+  app/
+    api/            # HTTP routes (health only for now)
+    core/           # config, logging, exceptions, deps
+    db/             # SQLAlchemy base + session
+    models/         # ORM models (none yet)
+    schemas/        # Pydantic request/response schemas
+    services/       # application services (planned)
+    brokers/
+      base/         # BrokerAdapter ABC + shared types
+      adapters/     # concrete providers (planned)
+    trading/
+      proposals/    # trade proposals (planned)
+      risk/         # risk engine (planned)
+      validation/   # order validator (planned)
+      routing/      # broker router (planned)
+      execution/    # execution (planned)
+    strategies/     # strategy modules (planned)
+    market_data/    # market data (planned)
+    market_memory/  # market memory (planned)
+    signals/        # external signals (planned)
+    backtesting/    # backtesting (planned)
+    audit/          # audit logging (planned)
+  tests/
+  migrations/       # Alembic
+infra/              # future infra helpers
+scripts/            # operational scripts
+docs/               # additional documentation
+```
+
+---
+
+## Environment configuration
+
+1. Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+2. Fill in values as they become available. Never commit `.env`.
+
+| Variable | Purpose |
+|---|---|
+| `APP_NAME` | Application name |
+| `APP_ENV` | `development` / `staging` / `production` |
+| `LOG_LEVEL` | Logging level |
+| `API_HOST` / `API_PORT` | Bind host/port |
+| `DATABASE_URL` | Supabase PostgreSQL URL (optional for early local dev) |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
+
+The API **starts successfully** when `DATABASE_URL` is empty. Database
+operations and Alembic migrations require a real connection string.
+
+---
+
+## Local development setup
+
+Requires Python 3.12+.
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# from repository root
+cp .env.example .env
+
+# run API (from backend/)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Health check: `curl http://127.0.0.1:8000/health`
+
+---
+
+## Docker startup
+
+From the repository root (Compose file lives here; only the API service):
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+- API: `http://127.0.0.1:8000`
+- Health: `http://127.0.0.1:8000/health`
+
+PostgreSQL is **not** run in Docker Compose. Use Supabase for persistent data.
+
+---
+
+## Tests
+
+```bash
+cd backend
+pip install -r requirements.txt
+pytest
+```
+
+---
+
+## Alembic (later)
+
+Once `DATABASE_URL` points at Supabase:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe change"
+alembic upgrade head
+```
+
+No trading schema migrations exist yet.
