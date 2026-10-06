@@ -1,9 +1,6 @@
-"""Broker integration package.
+"""Broker package — adapter contracts and simulation only for V1."""
 
-Public contract: ``BrokerAdapter``. Adapters are selected only via the
-trading pipeline's broker router — never from strategies or signals.
-"""
+from app.brokers.adapters.simulation import SIMULATION_PROVIDER, SimulationBroker
+from app.brokers.base.broker import BrokerAdapter
 
-from app.brokers.base import BrokerAdapter
-
-__all__ = ["BrokerAdapter"]
+__all__ = ["BrokerAdapter", "SimulationBroker", "SIMULATION_PROVIDER"]

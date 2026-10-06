@@ -20,6 +20,8 @@ Hostinger-specific dependencies).
 - Version 1 trading schema (models + migrations `111d98cf92b8` → `a86f3472f808`)
   with fail-closed defaults (PAPER + DISABLED), composite order/proposal account
   integrity, and defense-in-depth CHECK constraints
+- Trading Safety Pipeline V1: TradeProposalService → RiskEngine → OrderValidator
+  → BrokerRouter → SimulationBroker (PAPER only; zero real-broker network calls)
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)
@@ -28,14 +30,14 @@ Hostinger-specific dependencies).
 
 ## PLANNED (not implemented)
 
-- Broker adapters (Alpaca, Tradovate, Interactive Brokers, …)
+- Real broker adapters (Alpaca, Tradovate, Interactive Brokers, …)
 - Strategy orchestration and automated strategies
-- Trade proposals, risk engine, order validator, broker router, execution
-- Paper / live trading modes
+- Live trading modes / live execution
 - Market-data integrations, market memory, backtesting
 - External signal ingestion (including Telegram/Discord)
 - AI-generated trade proposals
 - Frontend
+- Public trade-execution HTTP API
 
 ---
 

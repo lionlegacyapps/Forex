@@ -1,5 +1,5 @@
-"""Order validation boundaries (planned).
+"""Order validation package."""
 
-Will validate order shape, symbol eligibility, mode (paper/live), and
-account assignment after risk approval and before broker routing.
-"""
+from app.trading.validation.validator import OrderValidator, ValidationCheck, ValidationResult
+
+__all__ = ["OrderValidator", "ValidationResult", "ValidationCheck"]
