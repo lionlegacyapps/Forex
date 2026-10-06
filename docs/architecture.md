@@ -43,8 +43,11 @@ filesystems. The VPS is replaceable compute.
 - Trading Safety Pipeline V1
 - Paper Execution & Portfolio Accounting V1
 - Market Data Provider V1 (read-only; Alpaca data API optional)
+- Alpaca Paper Account Read-Path V1 (read-only paper account/positions/orders;
+  observational reconciliation; **no** order execution)
 
-See [market-data-provider-v1.md](./market-data-provider-v1.md).
+See [market-data-provider-v1.md](./market-data-provider-v1.md) and
+[alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md).
 
 Not implemented: real broker order execution, live trading, Tradovate,
 automated strategies, AI, frontend.

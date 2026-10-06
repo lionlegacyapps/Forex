@@ -26,6 +26,8 @@ Hostinger-specific dependencies).
   realized/unrealized P&L, exposure, daily PnL → Risk Engine feedback
 - Market Data Provider V1: read-only MarketDataService + Alpaca data API provider
   (no order execution); SimulationMarketData preserved for offline tests
+- Alpaca Paper Account Read-Path V1: read-only paper account/positions/orders via
+  BrokerStateService; observational reconciliation; no order submission
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)
@@ -34,10 +36,10 @@ Hostinger-specific dependencies).
 
 ## PLANNED (not implemented)
 
-- Real broker adapters (Alpaca, Tradovate, Interactive Brokers, …)
+- Real broker order execution adapters (Alpaca paper/live execution, Tradovate, IBKR, …)
 - Strategy orchestration and automated strategies
 - Live trading modes / live execution
-- Market-data integrations, market memory, backtesting
+- Market memory, backtesting
 - External signal ingestion (including Telegram/Discord)
 - AI-generated trade proposals
 - Frontend
