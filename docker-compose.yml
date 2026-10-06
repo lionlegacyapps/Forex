@@ -1,0 +1,25 @@
+# Backend API only.
+# Persistent data lives in Supabase PostgreSQL — do not run Postgres in Compose.
+#
+# Secrets come ONLY from the repository-root `.env` file via `env_file`.
+# Do not embed real credentials here.
+# Do not interpolate DATABASE_URL from the host shell (${DATABASE_URL:-}) —
+# a stale shell export (e.g. local trading_dev) would override `.env`.
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: algo-trading-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_NAME: ${APP_NAME:-algo-trading-backend}
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # DATABASE_URL / Supabase keys: supplied by env_file (.env) only.
+    restart: unless-stopped
+    # VPS-portable: no Hostinger-specific mounts, networks, or labels.
