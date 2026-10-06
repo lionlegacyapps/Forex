@@ -621,25 +621,44 @@ def test_reproducibility() -> None:
 
 
 def test_reference_sma_backtest_end_to_end() -> None:
-    # Construct a clear golden-cross then death-cross series
-    closes = ["10", "10", "10", "11", "12", "13", "14", "13", "12", "11", "10", "9"]
+    # Downtrend → uptrend → downtrend produces enter_long then exit_long.
+    # Reference strategy is for framework proof only — not a profitability claim.
+    closes = [
+        "50", "49", "48", "47", "46", "45", "44", "43", "42", "41",
+        "42", "44", "46", "48", "50", "52", "54", "56", "58", "60",
+        "58", "55", "52", "49", "46", "43", "40", "37", "34", "31",
+    ]
     provider = _provider_with("AAPL", closes)
     hook = RecordingMemoryHook()
+    params = {"fast_period": 3, "slow_period": 7, "quantity": "1"}
     engine = BacktestEngine(provider, memory_hook=hook)
     result = engine.run(
         SMACrossoverStrategy(),
         symbols=["AAPL"],
         timeframe="1Day",
-        starting_capital=Decimal("10000"),
-        parameters={"fast_period": 2, "slow_period": 4, "quantity": "1"},
+        starting_capital=Decimal("100000"),
+        parameters=params,
     )
     assert result.strategy_id == "sma_crossover"
     assert result.strategy_version == "1.0.0"
+    assert result.metrics.number_of_trades >= 1
+    assert result.trades[0].side == "long"
+    assert result.trades[0].entry_price > 0
+    assert result.trades[0].exit_price > 0
+    assert len(result.equity_curve) == len(closes)
     assert "BACKTEST PERFORMANCE DOES NOT GUARANTEE FUTURE PERFORMANCE." in result.warnings
     assert result.execution_assumptions["external_broker"] is False
     assert any(e.event_type == "strategy_decision" for e in hook.events)
-    # Decisions should have been generated (at least some non-empty evaluations)
-    assert len(hook.events) >= len(closes)
+    assert any(e.event_type == "fill" for e in hook.events)
+    # Reproducible under identical inputs
+    again = BacktestEngine(_provider_with("AAPL", closes)).run(
+        SMACrossoverStrategy(),
+        symbols=["AAPL"],
+        timeframe="1Day",
+        starting_capital=Decimal("100000"),
+        parameters=params,
+    )
+    assert again.to_serializable_dict() == result.to_serializable_dict()
 
 
 def test_multiple_strategies_remain_separate() -> None:
