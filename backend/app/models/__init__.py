@@ -1,9 +1,49 @@
-"""ORM models package.
-
-Trading / broker / strategy tables are intentionally not defined yet.
-Import models here once they exist so Alembic can discover them via Base.metadata.
-"""
+"""ORM models package — Version 1 trading schema."""
 
 from app.db.base import Base
+from app.models.audit_event import AuditEvent
+from app.models.broker_account import BrokerAccount
+from app.models.enums import (
+    AssetClass,
+    OrderStatus,
+    OrderType,
+    PositionStatus,
+    RiskScopeType,
+    StrategyStatus,
+    TimeInForce,
+    TradeProposalStatus,
+    TradeSide,
+    TradingMode,
+)
+from app.models.execution import Execution
+from app.models.market_memory_event import MarketMemoryEvent
+from app.models.order import Order
+from app.models.position import Position
+from app.models.risk_policy import RiskPolicy
+from app.models.strategy import Strategy
+from app.models.strategy_account_assignment import StrategyAccountAssignment
+from app.models.trade_proposal import TradeProposal
 
-__all__ = ["Base"]
+__all__ = [
+    "AssetClass",
+    "AuditEvent",
+    "Base",
+    "BrokerAccount",
+    "Execution",
+    "MarketMemoryEvent",
+    "Order",
+    "OrderStatus",
+    "OrderType",
+    "Position",
+    "PositionStatus",
+    "RiskPolicy",
+    "RiskScopeType",
+    "Strategy",
+    "StrategyAccountAssignment",
+    "StrategyStatus",
+    "TimeInForce",
+    "TradeProposal",
+    "TradeProposalStatus",
+    "TradeSide",
+    "TradingMode",
+]

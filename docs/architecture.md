@@ -19,5 +19,8 @@ filesystems. The VPS is replaceable compute.
 
 ## Current scope
 
-Foundation only: FastAPI health, config, DB session wiring, Alembic
-bootstrap, abstract broker contract, empty module packages.
+Foundation plus **Version 1 database schema** (tables/models/migration only).
+See [schema-v1.md](./schema-v1.md) for table details and ER diagram.
+
+Not implemented yet: broker adapters, risk engine, execution, strategies,
+market-data, AI, backtesting, or frontend.

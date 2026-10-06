@@ -16,13 +16,13 @@ Hostinger-specific dependencies).
 - Application exception hierarchy
 - SQLAlchemy engine/session architecture for Supabase PostgreSQL via `DATABASE_URL`
   (psycopg3 driver, TLS for remote hosts; starts without `DATABASE_URL`)
-- Alembic migration tooling wired from app settings (no trading tables yet)
+- Alembic migration tooling wired from app settings
+- Version 1 trading schema (models + migration `111d98cf92b8`) — tables only
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
-- Empty module boundaries for the future trading pipeline, strategies,
-  market data, market memory, signals, backtesting, and audit
+- Module boundaries for the future trading pipeline (logic not implemented)
 - Docker + Docker Compose for the API service only
-- Basic pytest coverage (startup, health, config)
+- pytest coverage (startup, health, config, schema)
 
 ## PLANNED (not implemented)
 
@@ -33,7 +33,6 @@ Hostinger-specific dependencies).
 - Market-data integrations, market memory, backtesting
 - External signal ingestion (including Telegram/Discord)
 - AI-generated trade proposals
-- Supabase schema / trading tables
 - Frontend
 
 ---
