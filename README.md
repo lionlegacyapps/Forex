@@ -9,12 +9,15 @@ Hostinger-specific dependencies).
 ## CURRENTLY IMPLEMENTED
 
 - Modular FastAPI application skeleton
-- `GET /health` liveness endpoint
-- Environment-variable configuration (`pydantic-settings`)
+- `GET /health` liveness endpoint (does not require the database)
+- `GET /health/database` connectivity probe (`SELECT 1`; no secrets in response)
+- Environment-variable configuration (`pydantic-settings`, loads repo-root `.env`)
 - Structured logging foundation
 - Application exception hierarchy
-- SQLAlchemy engine/session architecture (lazy; starts without `DATABASE_URL`)
-- Alembic migration tooling wired (no trading tables yet)
+- SQLAlchemy engine/session architecture for Supabase PostgreSQL via `DATABASE_URL`
+  (psycopg3 driver, TLS for remote hosts; starts without `DATABASE_URL`)
+- Alembic migration tooling wired from app settings (no trading tables yet)
+- `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Empty module boundaries for the future trading pipeline, strategies,
   market data, market memory, signals, backtesting, and audit

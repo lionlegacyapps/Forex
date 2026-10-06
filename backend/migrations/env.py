@@ -1,7 +1,7 @@
 """Alembic migration environment.
 
-Reads DATABASE_URL from application settings. Trading tables are not
-created yet — this wires the migration tooling only.
+Reads DATABASE_URL from application settings (never hard-coded). Trading
+tables are not created yet — this wires the migration tooling only.
 """
 
 from logging.config import fileConfig
@@ -12,6 +12,7 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import get_settings
 from app.core.exceptions import DatabaseNotConfiguredError
 from app.db.base import Base
+from app.db.url import normalize_database_url
 
 # Import models package so future metadata is registered with Base.
 import app.models  # noqa: F401
@@ -29,7 +30,7 @@ def _database_url() -> str:
     if not settings.is_database_configured:
         raise DatabaseNotConfiguredError()
     assert settings.database_url is not None
-    return settings.database_url
+    return normalize_database_url(settings.database_url)
 
 
 def run_migrations_offline() -> None:
