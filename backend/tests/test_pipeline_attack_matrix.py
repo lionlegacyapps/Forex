@@ -249,8 +249,9 @@ async def test_reject_open_position_limit(db_session: Session) -> None:
         )
     )
     db_session.flush()
+    # Different symbol ⇒ would open a new position slot.
     result = await _service(db_session).create_and_process(
-        valid_limit_proposal(account, stop_loss_price=None)
+        valid_limit_proposal(account, stop_loss_price=None, symbol="MSFT")
     )
     assert result.risk and result.risk.reason_code == codes.MAX_OPEN_POSITIONS_EXCEEDED
 

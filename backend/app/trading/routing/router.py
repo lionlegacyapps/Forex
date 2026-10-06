@@ -21,6 +21,8 @@ from app.models.broker_account import BrokerAccount
 from app.models.enums import OrderStatus, TradeProposalStatus
 from app.models.order import Order
 from app.models.trade_proposal import TradeProposal
+from app.trading.execution.market_data import SimulationMarketData, default_simulation_market_data
+from app.trading.execution.service import PaperExecutionService
 from app.trading.proposals.transitions import assert_proposal_transition
 from app.trading.risk import codes
 
@@ -43,12 +45,18 @@ class BrokerRouter:
         *,
         audit: AuditService | None = None,
         adapters: dict[str, BrokerAdapter] | None = None,
+        market_data: SimulationMarketData | None = None,
+        paper_execution: PaperExecutionService | None = None,
     ) -> None:
         self._session = session
         self._audit = audit or AuditService(session)
+        self._market = market_data or default_simulation_market_data
         self._adapters: dict[str, BrokerAdapter] = adapters or {
-            SIMULATION_PROVIDER: SimulationBroker(),
+            SIMULATION_PROVIDER: SimulationBroker(market_data=self._market),
         }
+        self._paper = paper_execution or PaperExecutionService(
+            session, market_data=self._market, audit=self._audit
+        )
 
     def get_adapter(self, broker_slug: str) -> BrokerAdapter | None:
         return self._adapters.get(broker_slug.lower().strip())
@@ -144,6 +152,9 @@ class BrokerRouter:
             submitted_at=datetime.now(UTC),
         )
         self._session.add(db_order)
+        self._session.flush()
+
+        fill = self._paper.process_submitted_order(db_order)
 
         assert_proposal_transition(proposal.status, TradeProposalStatus.SUBMITTED)
         proposal.status = TradeProposalStatus.SUBMITTED
@@ -157,14 +168,26 @@ class BrokerRouter:
                 "broker_order_id": broker_order.id,
                 "trade_proposal_id": str(proposal.id),
                 "broker": broker_slug,
-                "status": broker_order.status.value,
+                "status": db_order.status.value,
+                "filled": fill.filled,
+                "fill_reason": fill.reason_code,
             },
         )
 
         return RouteResult(
             success=True,
-            message="Order submitted via simulation broker",
+            message=(
+                "Order submitted and filled via simulation"
+                if fill.filled
+                else "Order submitted via simulation (not filled)"
+            ),
             order_id=str(db_order.id),
             broker_order_id=broker_order.id,
-            details={"provider": adapter.provider_name},
+            details={
+                "provider": adapter.provider_name,
+                "filled": fill.filled,
+                "fill_price": str(fill.fill_price) if fill.fill_price is not None else None,
+                "broker_execution_id": fill.broker_execution_id,
+                "fill_reason_code": fill.reason_code,
+            },
         )

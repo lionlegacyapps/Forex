@@ -22,6 +22,8 @@ Hostinger-specific dependencies).
   integrity, and defense-in-depth CHECK constraints
 - Trading Safety Pipeline V1: TradeProposalService → RiskEngine → OrderValidator
   → BrokerRouter → SimulationBroker (PAPER only; zero real-broker network calls)
+- Paper Execution & Portfolio Accounting V1: deterministic sim fills, positions,
+  realized/unrealized P&L, exposure, daily PnL → Risk Engine feedback
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)

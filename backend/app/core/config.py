@@ -63,6 +63,12 @@ class Settings(BaseSettings):
     # Optional until `.env` is filled — API still starts without DB credentials.
     database_url: str | None = None
 
+    # Trading-day timezone for daily realized P&L (IANA name).
+    trading_day_timezone: str = "America/New_York"
+
+    # Simulation V1 starting cash (not real broker buying power).
+    simulation_starting_cash: str = "100000"
+
     supabase_url: str | None = None
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None
