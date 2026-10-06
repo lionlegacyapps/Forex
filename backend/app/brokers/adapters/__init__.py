@@ -1,6 +1,10 @@
-"""Broker provider adapters.
+"""Concrete broker adapters.
 
-Concrete adapters (Alpaca, Tradovate, IBKR, etc.) will be added here later.
-No strategy or signal module should import adapters directly — use the
-broker router in ``app.trading.routing``.
+Safety Pipeline V1 ships only SimulationBroker.
+Real broker SDKs (Alpaca, Tradovate, IBKR, crypto exchanges) must NOT be
+imported or configured here.
 """
+
+from app.brokers.adapters.simulation import SIMULATION_PROVIDER, SimulationBroker
+
+__all__ = ["SimulationBroker", "SIMULATION_PROVIDER"]

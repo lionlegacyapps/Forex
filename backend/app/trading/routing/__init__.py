@@ -1,5 +1,5 @@
-"""Broker routing boundaries (planned).
+"""Broker routing package."""
 
-Will map approved, validated orders to the correct broker adapter and
-account. Strategies must never select or call adapters directly.
-"""
+from app.trading.routing.router import BrokerRouter, RouteResult
+
+__all__ = ["BrokerRouter", "RouteResult"]
