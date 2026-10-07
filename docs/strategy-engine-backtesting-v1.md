@@ -179,21 +179,13 @@ timestamps across symbols for future multi-symbol use.
 Optional `BacktestMemoryHook` receives decision/fill events for future Market
 Memory. **No AI/learning system in V1.**
 
-## Future GitHub strategy integration (process only)
+## GitHub strategy integration
 
-**Do not** `git clone` arbitrary repositories into the trading runtime.
+See [github-strategy-intake-adapter-framework-v1.md](./github-strategy-intake-adapter-framework-v1.md).
 
-Intended future process:
+**EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
 
-1. External GitHub repository
-2. Security / license review
-3. Algorithm extraction or wrapper
-4. Strategy Adapter implementing `Strategy`
-5. Strategy Registry registration
-6. Backtest
-7. QA
-8. Paper eligible (manual)
-
+Do not `git clone` arbitrary repositories into the trading runtime.
 Never execute untrusted external code directly inside the trading runtime.
 
 ## Reference strategy

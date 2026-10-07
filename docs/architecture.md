@@ -57,12 +57,18 @@ filesystems. The VPS is replaceable compute.
 - Strategy Engine + Backtesting Foundation V1 (strategy interface/registry,
   decision→proposal adapter, historical data abstraction, offline backtester,
   lookahead protection, metrics; reference SMA only)
+- GitHub Strategy Intake & Adapter Framework V1 (intake models, license/security
+  review, classification, manifests with commit pins, ExternalStrategyAdapter
+  gate — **no** external repo clone/execute)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
 [alpaca-paper-execution-adapter-v1.md](./alpaca-paper-execution-adapter-v1.md),
 [alpaca-paper-order-lifecycle-v1.md](./alpaca-paper-order-lifecycle-v1.md),
-and [strategy-engine-backtesting-v1.md](./strategy-engine-backtesting-v1.md).
+[strategy-engine-backtesting-v1.md](./strategy-engine-backtesting-v1.md),
+and [github-strategy-intake-adapter-framework-v1.md](./github-strategy-intake-adapter-framework-v1.md).
 
-Not implemented: live trading, Tradovate, external GitHub strategy imports,
-AI trading decisions, frontend charts.
+**EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
+
+Not implemented: live trading, Tradovate, cloning/executing external GitHub
+strategies, AI trading decisions, frontend charts.
