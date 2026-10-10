@@ -60,15 +60,18 @@ filesystems. The VPS is replaceable compute.
 - GitHub Strategy Intake & Adapter Framework V1 (intake models, license/security
   review, classification, manifests with commit pins, ExternalStrategyAdapter
   gate — **no** external repo clone/execute)
+- Microsoft Qlib Research Integration V1 (intake + pinned commit; factor concepts
+  adapted into isolated `app.research`; full `pyqlib` **not** installed/executed)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
 [alpaca-paper-execution-adapter-v1.md](./alpaca-paper-execution-adapter-v1.md),
 [alpaca-paper-order-lifecycle-v1.md](./alpaca-paper-order-lifecycle-v1.md),
 [strategy-engine-backtesting-v1.md](./strategy-engine-backtesting-v1.md),
-and [github-strategy-intake-adapter-framework-v1.md](./github-strategy-intake-adapter-framework-v1.md).
+[github-strategy-intake-adapter-framework-v1.md](./github-strategy-intake-adapter-framework-v1.md),
+and [microsoft-qlib-research-integration-v1.md](./microsoft-qlib-research-integration-v1.md).
 
 **EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
 
-Not implemented: live trading, Tradovate, cloning/executing external GitHub
-strategies, AI trading decisions, frontend charts.
+Not implemented: live trading, Tradovate, FinRL-X, Freqtrade, executing full
+Qlib/pyqlib in the trading runtime, AI auto-trading, frontend charts.
