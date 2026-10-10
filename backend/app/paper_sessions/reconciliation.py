@@ -10,9 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.broker_state.models import BrokerOrderSnapshot, BrokerPositionSnapshot
 from app.broker_state.reconciliation import ReconciliationEngine
+from decimal import Decimal
+
 from app.models.broker_account import BrokerAccount
 from app.models.enums import TradingMode
 from app.paper_sessions.errors import ActivationRejectedError
+from app.paper_sessions.paper_endpoint import verify_alpaca_paper_endpoint
 
 
 class BrokerSnapshotSource(Protocol):
@@ -29,11 +32,15 @@ class StaticBrokerSnapshotSource:
         *,
         external_account_id: str = "paper-test",
         paper_verified: bool = True,
+        buying_power: str = "100000",
+        paper_base_url: str = "https://paper-api.alpaca.markets",
         positions: list[BrokerPositionSnapshot] | None = None,
         open_orders: list[BrokerOrderSnapshot] | None = None,
     ) -> None:
         self.external_account_id = external_account_id
         self.paper_verified = paper_verified
+        self.buying_power = buying_power
+        self.paper_base_url = paper_base_url
         self.positions = list(positions or [])
         self.open_orders = list(open_orders or [])
 
@@ -42,6 +49,8 @@ class StaticBrokerSnapshotSource:
             "external_account_id": self.external_account_id,
             "paper_verified": self.paper_verified,
             "trading_mode": "paper",
+            "buying_power": self.buying_power,
+            "paper_base_url": self.paper_base_url,
         }
 
     async def get_positions(self) -> list[BrokerPositionSnapshot]:
@@ -67,6 +76,8 @@ async def reconcile_before_activation(
     instrument: str,
     allow_existing_positions: bool = False,
     allow_open_orders: bool = False,
+    require_buying_power: bool = False,
+    verify_paper_endpoint: bool = False,
 ) -> PreActivationReconciliationResult:
     if account.trading_mode != TradingMode.PAPER:
         raise ActivationRejectedError("live account rejected", code="live_account")
@@ -75,9 +86,29 @@ async def reconcile_before_activation(
     reasons: list[str] = []
     if not identity.get("paper_verified", False):
         reasons.append("broker_not_paper_verified")
+    # Never trust client trading_mode flags — only server account mode + paper_verified.
+    if identity.get("trading_mode") and identity.get("trading_mode") != "paper":
+        reasons.append("broker_identity_not_paper")
     ext = identity.get("external_account_id")
     if account.external_account_id and ext and account.external_account_id != ext:
         reasons.append("broker_account_identity_mismatch")
+
+    if verify_paper_endpoint:
+        try:
+            endpoint = identity.get("paper_base_url")
+            verify_alpaca_paper_endpoint(
+                str(endpoint) if endpoint else None
+            )
+        except ActivationRejectedError as exc:
+            reasons.append(exc.code)
+
+    if require_buying_power:
+        try:
+            bp = Decimal(str(identity.get("buying_power", "0")))
+        except Exception:  # noqa: BLE001
+            bp = Decimal("0")
+        if bp <= 0:
+            reasons.append("insufficient_paper_buying_power")
 
     positions = await broker_source.get_positions()
     orders = await broker_source.get_open_orders()

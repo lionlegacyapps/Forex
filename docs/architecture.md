@@ -3,10 +3,12 @@
 ## Order pipeline (mandatory — Safety Pipeline V1)
 
 ```
-Trade Proposal → Risk Engine → Order Validator → Broker Router → Simulation Broker
+Trade Proposal → Risk Engine → Order Validator → Broker Router
+  → Simulation Broker | Alpaca Paper Adapter (authorized PAPER_EXECUTE only)
 ```
 
-**REAL BROKER EXECUTION IS NOT IMPLEMENTED.**
+**LIVE BROKER EXECUTION IS IMPOSSIBLE.** Paper submit requires feature flag +
+session-scoped consent; credentials alone never unlock writes.
 
 No trade execution component may bypass this path.
 
@@ -76,7 +78,11 @@ filesystems. The VPS is replaceable compute.
   for paper-session eligibility; durable approvals; **no** session start / orders /
   live trading)
 - Controlled Paper Session Runner V1 (manual DRY_RUN sessions; qualification +
-  risk + validator path; **PAPER_EXECUTE disabled**; no auto-start / no live trading)
+  risk + validator path; **PAPER_EXECUTE disabled by default**; no auto-start /
+  no live trading)
+- Authorized Paper Execute Activation V1 (session-scoped consent + feature flag;
+  Risk → Validator → Broker Router → Alpaca paper adapter; mocked in tests;
+  **no** real Alpaca orders / no live trading / no always-on worker)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
