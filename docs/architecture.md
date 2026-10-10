@@ -83,6 +83,9 @@ filesystems. The VPS is replaceable compute.
 - Authorized Paper Execute Activation V1 (session-scoped consent + feature flag;
   Risk → Validator → Broker Router → Alpaca paper adapter; mocked in tests;
   **no** real Alpaca orders / no live trading / no always-on worker)
+- Supervised Single-Strategy Paper Pilot Preparation V1 (preflight, DRY_RUN,
+  FakeExecutionAdapter rehearsal, operator runbook; **no** real paper orders;
+  deployment execute remains disabled)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
