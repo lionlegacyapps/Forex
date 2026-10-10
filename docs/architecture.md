@@ -3,10 +3,12 @@
 ## Order pipeline (mandatory — Safety Pipeline V1)
 
 ```
-Trade Proposal → Risk Engine → Order Validator → Broker Router → Simulation Broker
+Trade Proposal → Risk Engine → Order Validator → Broker Router
+  → Simulation Broker | Alpaca Paper Adapter (authorized PAPER_EXECUTE only)
 ```
 
-**REAL BROKER EXECUTION IS NOT IMPLEMENTED.**
+**LIVE BROKER EXECUTION IS IMPOSSIBLE.** Paper submit requires feature flag +
+session-scoped consent; credentials alone never unlock writes.
 
 No trade execution component may bypass this path.
 
