@@ -19,9 +19,26 @@ from app.research.qlib_intake import (
     build_qlib_intake_result,
     qlib_approved_adaptation_manifest,
 )
+from app.research.rl import (
+    FINRLX_PINNED_COMMIT,
+    FINRLX_REPOSITORY_URL,
+    DeterministicMomentumBaselinePolicy,
+    FinRLXBaselineSignalAdapter,
+    OfflineTradingEnv,
+    OfflineTradingEnvConfig,
+    build_finrlx_intake_result,
+    evaluate_policy,
+    finrlx_approved_adaptation_manifest,
+)
 from app.research.strategy_adapter import QlibFactorSignalAdapter
 
 __all__ = [
+    "FINRLX_PINNED_COMMIT",
+    "FINRLX_REPOSITORY_URL",
+    "DeterministicMomentumBaselinePolicy",
+    "FinRLXBaselineSignalAdapter",
+    "OfflineTradingEnv",
+    "OfflineTradingEnvConfig",
     "QLIB_PINNED_COMMIT",
     "QLIB_REPOSITORY_URL",
     "QlibFactorSignalAdapter",
@@ -30,8 +47,11 @@ __all__ = [
     "ResearchOutput",
     "ResearchPrediction",
     "bars_to_research_frame",
+    "build_finrlx_intake_result",
     "build_qlib_intake_result",
     "compute_momentum_factor",
     "compute_return_factor",
+    "evaluate_policy",
+    "finrlx_approved_adaptation_manifest",
     "qlib_approved_adaptation_manifest",
 ]
