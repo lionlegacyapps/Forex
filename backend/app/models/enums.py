@@ -49,6 +49,22 @@ class ApprovalScope(StrEnum):
     PAPER_ONLY = "paper_only"
 
 
+class PaperSessionState(StrEnum):
+    CREATED = "created"
+    READY = "ready"
+    RUNNING = "running"
+    PAUSING = "pausing"
+    PAUSED = "paused"
+    STOPPING = "stopping"
+    STOPPED = "stopped"
+    FAILED = "failed"
+
+
+class PaperSessionExecutionMode(StrEnum):
+    DRY_RUN = "dry_run"
+    PAPER_EXECUTE = "paper_execute"
+
+
 class TradeSide(StrEnum):
     BUY = "buy"
     SELL = "sell"

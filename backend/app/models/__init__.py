@@ -9,6 +9,8 @@ from app.models.enums import (
     AssetClass,
     OrderStatus,
     OrderType,
+    PaperSessionExecutionMode,
+    PaperSessionState,
     PositionStatus,
     ProposalSource,
     QualificationState,
@@ -22,6 +24,7 @@ from app.models.enums import (
 from app.models.execution import Execution
 from app.models.market_memory_event import MarketMemoryEvent
 from app.models.order import Order
+from app.models.paper_trading_session import PaperSessionProcessedBar, PaperTradingSession
 from app.models.position import Position
 from app.models.risk_policy import RiskPolicy
 from app.models.strategy import Strategy
@@ -41,6 +44,10 @@ __all__ = [
     "Order",
     "OrderStatus",
     "OrderType",
+    "PaperSessionExecutionMode",
+    "PaperSessionProcessedBar",
+    "PaperSessionState",
+    "PaperTradingSession",
     "Position",
     "PositionStatus",
     "ProposalSource",

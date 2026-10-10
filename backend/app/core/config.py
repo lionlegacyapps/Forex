@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     # Empty allowlist → approval fail-closed (no approvals possible).
     paper_qualification_owner_subjects: str = ""
 
+    # PAPER_EXECUTE session activation (default False — V1 dry-run only).
+    paper_session_execute_enabled: bool = False
+
     @classmethod
     def settings_customise_sources(
         cls,
