@@ -69,6 +69,9 @@ filesystems. The VPS is replaceable compute.
 - Strategy Evaluation & Market Memory V1 (normalized evaluation records, regime
   classification, trade attribution, same-dataset comparison, persistence into
   existing `market_memory_events`; **no** auto-promotion / live trading)
+- Walk-Forward Evaluation Harness V1 (chronological TRAIN/VALIDATION/OOS splits,
+  rolling/expanding windows, leakage guards, fixed-parameter evaluation;
+  **no** optimization / promotion / live trading)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
@@ -79,7 +82,8 @@ See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [microsoft-qlib-research-integration-v1.md](./microsoft-qlib-research-integration-v1.md),
 [finrl-x-rl-research-integration-v1.md](./finrl-x-rl-research-integration-v1.md),
 [freqtrade-strategy-research-adapter-v1.md](./freqtrade-strategy-research-adapter-v1.md),
-and [strategy-evaluation-market-memory-v1.md](./strategy-evaluation-market-memory-v1.md).
+[strategy-evaluation-market-memory-v1.md](./strategy-evaluation-market-memory-v1.md),
+and [walk-forward-evaluation-harness-v1.md](./walk-forward-evaluation-harness-v1.md).
 
 **EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
 

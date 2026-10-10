@@ -19,8 +19,10 @@ from app.models.enums import AssetClass
 from app.models.market_memory_event import MarketMemoryEvent
 
 SOURCE_EVALUATION = "strategy_evaluation_v1"
+SOURCE_WALK_FORWARD = "walk_forward_evaluation_v1"
 EVENT_TYPE_EVALUATION = "strategy_evaluation_summary"
 EVENT_TYPE_REGIME = "market_context_snapshot"
+EVENT_TYPE_WALK_FORWARD = "walk_forward_evaluation_summary"
 
 
 def _payload_hash(payload: dict[str, Any]) -> str:
@@ -143,6 +145,63 @@ class MarketMemoryRepository:
             source=source,
             strategy_id=strategy_db_id,
             outcome={"snapshot": snapshot},
+        )
+        self.session.add(event)
+        self.session.flush()
+        return event, True
+
+    def persist_walk_forward_summary(
+        self,
+        *,
+        evidence_id: str,
+        symbol: str,
+        asset_class: AssetClass,
+        event_time: datetime,
+        summary: dict[str, Any],
+        strategy_db_id: uuid.UUID | None = None,
+        engine_strategy_id: str | None = None,
+        source: str = SOURCE_WALK_FORWARD,
+    ) -> tuple[MarketMemoryEvent, bool]:
+        """Persist compact walk-forward harness summary (idempotent)."""
+        safe_summary = {
+            k: v
+            for k, v in summary.items()
+            if k
+            not in {
+                "bars",
+                "ohlcv",
+                "equity_curve",
+                "model_binary",
+                "period_reports",  # use period_summaries instead
+            }
+        }
+        context = {
+            "evidence_id": evidence_id,
+            "payload_hash": _payload_hash(safe_summary),
+            "engine_strategy_id": engine_strategy_id,
+            "kind": "walk_forward_summary",
+        }
+        existing = self.find_by_evidence_id(
+            evidence_id, event_type=EVENT_TYPE_WALK_FORWARD
+        )
+        if existing is not None:
+            existing_hash = (existing.market_context or {}).get("payload_hash")
+            if existing_hash and existing_hash != context["payload_hash"]:
+                raise EvidenceConflictError(
+                    f"walk-forward evidence_id {evidence_id} conflict"
+                )
+            return existing, False
+
+        event = MarketMemoryEvent(
+            symbol=symbol.strip().upper(),
+            asset_class=asset_class,
+            event_type=EVENT_TYPE_WALK_FORWARD,
+            event_time=event_time,
+            market_context=context,
+            source=source,
+            strategy_id=strategy_db_id,
+            trade_proposal_id=None,
+            outcome=safe_summary,
         )
         self.session.add(event)
         self.session.flush()

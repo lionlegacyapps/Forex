@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 from app.evaluation.hashing import sha256_hex
 from app.evaluation.models import StrategyEvaluationRecord
 from app.evaluation.regimes import MarketContextSnapshot
+from app.evaluation.walkforward.harness import WalkForwardResult
 from app.market_memory.repository import (
     EVENT_TYPE_EVALUATION,
+    EVENT_TYPE_WALK_FORWARD,
     MarketMemoryRepository,
 )
 from app.models.enums import AssetClass
@@ -74,4 +76,28 @@ class MarketMemoryService:
     def get_evaluation_event(self, evaluation_id: str) -> MarketMemoryEvent | None:
         return self.repo.find_by_evidence_id(
             evaluation_id, event_type=EVENT_TYPE_EVALUATION
+        )
+
+    def persist_walk_forward(
+        self,
+        result: WalkForwardResult,
+        *,
+        asset_class: AssetClass = AssetClass.EQUITY,
+        strategy_db_id: uuid.UUID | None = None,
+    ) -> tuple[MarketMemoryEvent, bool]:
+        if result.paper_eligible or not result.promotion_blocked:
+            raise RuntimeError("refusing to persist auto-promoted walk-forward result")
+        return self.repo.persist_walk_forward_summary(
+            evidence_id=result.harness_id,
+            symbol=result.symbol,
+            asset_class=asset_class,
+            event_time=result.evaluated_at,
+            summary=result.persistence_summary(),
+            strategy_db_id=strategy_db_id,
+            engine_strategy_id=result.strategy_id,
+        )
+
+    def get_walk_forward_event(self, harness_id: str) -> MarketMemoryEvent | None:
+        return self.repo.find_by_evidence_id(
+            harness_id, event_type=EVENT_TYPE_WALK_FORWARD
         )
