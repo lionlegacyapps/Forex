@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from app.models.market_memory_event import MarketMemoryEvent
     from app.models.position import Position
     from app.models.strategy_account_assignment import StrategyAccountAssignment
+    from app.models.strategy_paper_qualification import StrategyPaperQualification
     from app.models.trade_proposal import TradeProposal
 
 
@@ -53,5 +54,8 @@ class Strategy(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="strategy",
     )
     market_memory_events: Mapped[list[MarketMemoryEvent]] = relationship(
+        back_populates="strategy",
+    )
+    paper_qualifications: Mapped[list[StrategyPaperQualification]] = relationship(
         back_populates="strategy",
     )

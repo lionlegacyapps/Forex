@@ -30,6 +30,25 @@ class StrategyStatus(StrEnum):
     RETIRED = "retired"
 
 
+class QualificationState(StrEnum):
+    """Paper qualification workflow states (approval ≠ execution)."""
+
+    DRAFT = "draft"
+    EVALUATION_REQUIRED = "evaluation_required"
+    EVALUATED = "evaluated"
+    REVIEW_REQUIRED = "review_required"
+    APPROVED_FOR_PAPER = "approved_for_paper"
+    REJECTED = "rejected"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+
+
+class ApprovalScope(StrEnum):
+    """Approval scope — live is intentionally absent."""
+
+    PAPER_ONLY = "paper_only"
+
+
 class TradeSide(StrEnum):
     BUY = "buy"
     SELL = "sell"

@@ -5,11 +5,13 @@ from app.models.audit_event import AuditEvent
 from app.models.broker_account import BrokerAccount
 from app.models.enums import (
     AccountType,
+    ApprovalScope,
     AssetClass,
     OrderStatus,
     OrderType,
     PositionStatus,
     ProposalSource,
+    QualificationState,
     RiskScopeType,
     StrategyStatus,
     TimeInForce,
@@ -24,10 +26,12 @@ from app.models.position import Position
 from app.models.risk_policy import RiskPolicy
 from app.models.strategy import Strategy
 from app.models.strategy_account_assignment import StrategyAccountAssignment
+from app.models.strategy_paper_qualification import StrategyPaperQualification
 from app.models.trade_proposal import TradeProposal
 
 __all__ = [
     "AccountType",
+    "ApprovalScope",
     "AssetClass",
     "AuditEvent",
     "Base",
@@ -40,10 +44,12 @@ __all__ = [
     "Position",
     "PositionStatus",
     "ProposalSource",
+    "QualificationState",
     "RiskPolicy",
     "RiskScopeType",
     "Strategy",
     "StrategyAccountAssignment",
+    "StrategyPaperQualification",
     "StrategyStatus",
     "TimeInForce",
     "TradeProposal",

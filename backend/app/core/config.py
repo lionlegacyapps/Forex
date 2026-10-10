@@ -85,6 +85,10 @@ class Settings(BaseSettings):
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None
 
+    # Comma-separated owner subjects allowed to approve paper qualification.
+    # Empty allowlist → approval fail-closed (no approvals possible).
+    paper_qualification_owner_subjects: str = ""
+
     @classmethod
     def settings_customise_sources(
         cls,
