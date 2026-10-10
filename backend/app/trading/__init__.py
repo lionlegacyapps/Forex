@@ -1,13 +1,10 @@
-"""Trading pipeline package.
+"""Trading pipeline packages.
 
-Automated order flow (planned — not implemented yet):
+Mandatory flow (no bypass):
 
-    Trade Proposal
-      → Risk Engine
-      → Order Validator
-      → Broker Router
-      → Broker Adapter
+    Trade Proposal → Risk Engine → Order Validator → Broker Router → Broker Adapter
 
-No strategy, AI model, external signal, or other component may bypass this
-pipeline to place broker orders.
+Import submodules directly to avoid circular imports.
 """
+
+__all__: list[str] = []

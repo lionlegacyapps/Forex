@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
@@ -31,6 +33,7 @@ class Execution(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     __tablename__ = "executions"
     __table_args__ = (
         Index("ix_executions_order_executed", "order_id", "executed_at"),
+        Index("ix_executions_broker_execution_id", "broker_execution_id"),
         UniqueConstraint(
             "order_id",
             "broker_execution_id",
@@ -58,6 +61,20 @@ class Execution(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
         nullable=False,
         server_default=func.now(),
         default=utc_now,
+    )
+    # PnL attributed to this fill (0 for pure opens / increases aside from commission).
+    realized_pnl: Mapped[Decimal] = mapped_column(
+        Numeric(24, 8),
+        nullable=False,
+        default=Decimal("0"),
+        server_default="0",
+    )
+    # Durable idempotency for position accounting.
+    accounting_applied: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
     )
 
     order: Mapped[Order] = relationship(back_populates="executions")

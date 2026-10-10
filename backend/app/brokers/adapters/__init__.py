@@ -1,6 +1,7 @@
-"""Broker provider adapters.
+"""Concrete broker adapters.
 
-Concrete adapters (Alpaca, Tradovate, IBKR, etc.) will be added here later.
-No strategy or signal module should import adapters directly — use the
-broker router in ``app.trading.routing``.
+Import SimulationBroker from ``app.brokers.adapters.simulation``.
+Alpaca paper execution lives under ``app.brokers.execution``.
 """
+
+__all__: list[str] = []

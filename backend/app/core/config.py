@@ -63,9 +63,34 @@ class Settings(BaseSettings):
     # Optional until `.env` is filled — API still starts without DB credentials.
     database_url: str | None = None
 
+    # Trading-day timezone for daily realized P&L (IANA name).
+    trading_day_timezone: str = "America/New_York"
+
+    # Simulation V1 starting cash (not real broker buying power).
+    simulation_starting_cash: str = "100000"
+
+    # Alpaca credentials (read-only market data + paper account reads).
+    # Never log these values. Never store them in broker_accounts.
+    alpaca_api_key: str | None = None
+    alpaca_api_secret: str | None = None
+    alpaca_data_base_url: str = "https://data.alpaca.markets"
+    # Paper trading API only — live api.alpaca.markets is forbidden by code.
+    alpaca_paper_base_url: str = "https://paper-api.alpaca.markets"
+    alpaca_paper_timeout_seconds: float = 10.0
+    market_data_timeout_seconds: float = 5.0
+    market_data_quote_max_age_seconds: int = 30
+    market_data_trade_max_age_seconds: int = 60
+
     supabase_url: str | None = None
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None
+
+    # Comma-separated owner subjects allowed to approve paper qualification.
+    # Empty allowlist → approval fail-closed (no approvals possible).
+    paper_qualification_owner_subjects: str = ""
+
+    # PAPER_EXECUTE session activation (default False — V1 dry-run only).
+    paper_session_execute_enabled: bool = False
 
     @classmethod
     def settings_customise_sources(

@@ -1,5 +1,18 @@
-"""Trade proposal contracts (planned).
+"""Trade proposal creation and lifecycle."""
 
-Strategies and signals will emit proposals here. Proposals are inputs to
-the risk engine — they are not executable orders.
-"""
+from app.trading.proposals.schemas import CreateTradeProposalInput, PipelineResult
+from app.trading.proposals.service import TradeProposalService
+from app.trading.proposals.transitions import (
+    ALLOWED_PROPOSAL_TRANSITIONS,
+    assert_proposal_transition,
+    can_transition,
+)
+
+__all__ = [
+    "CreateTradeProposalInput",
+    "PipelineResult",
+    "TradeProposalService",
+    "ALLOWED_PROPOSAL_TRANSITIONS",
+    "assert_proposal_transition",
+    "can_transition",
+]

@@ -1,9 +1,9 @@
-"""Broker integration package.
+"""Broker package — adapter contracts, simulation, and paper execution.
 
-Public contract: ``BrokerAdapter``. Adapters are selected only via the
-trading pipeline's broker router — never from strategies or signals.
+Import concrete modules directly to avoid circular imports, e.g.:
+
+    from app.brokers.adapters.simulation import SimulationBroker
+    from app.brokers.execution.alpaca_paper import AlpacaPaperExecutionAdapter
 """
 
-from app.brokers.base import BrokerAdapter
-
-__all__ = ["BrokerAdapter"]
+__all__: list[str] = []

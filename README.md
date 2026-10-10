@@ -20,6 +20,18 @@ Hostinger-specific dependencies).
 - Version 1 trading schema (models + migrations `111d98cf92b8` → `a86f3472f808`)
   with fail-closed defaults (PAPER + DISABLED), composite order/proposal account
   integrity, and defense-in-depth CHECK constraints
+- Trading Safety Pipeline V1: TradeProposalService → RiskEngine → OrderValidator
+  → BrokerRouter → SimulationBroker (PAPER only; zero real-broker network calls)
+- Paper Execution & Portfolio Accounting V1: deterministic sim fills, positions,
+  realized/unrealized P&L, exposure, daily PnL → Risk Engine feedback
+- Market Data Provider V1: read-only MarketDataService + Alpaca data API provider
+  (no order execution); SimulationMarketData preserved for offline tests
+- Alpaca Paper Account Read-Path V1: read-only paper account/positions/orders via
+  BrokerStateService; observational reconciliation; no order submission
+- Alpaca Paper Execution Adapter V1: controlled paper `submit_order` only through
+  Risk → Validator → Router (no live trading; opt-in mutating integration test)
+- Alpaca Paper Order Lifecycle V1: status sync, partial fills, controlled cancel,
+  fill→accounting, observational reconciliation (paper only)
 - `scripts/check-database.sh` safe connectivity check
 - Abstract `BrokerAdapter` contract and shared broker types
 - Module boundaries for the future trading pipeline (logic not implemented)
@@ -28,14 +40,15 @@ Hostinger-specific dependencies).
 
 ## PLANNED (not implemented)
 
-- Broker adapters (Alpaca, Tradovate, Interactive Brokers, …)
+- Live trading / live Alpaca execution
+- cancel_all_orders / liquidation APIs
+- Tradovate / IBKR execution
 - Strategy orchestration and automated strategies
-- Trade proposals, risk engine, order validator, broker router, execution
-- Paper / live trading modes
-- Market-data integrations, market memory, backtesting
+- Market memory, backtesting
 - External signal ingestion (including Telegram/Discord)
 - AI-generated trade proposals
 - Frontend
+- Public trade-execution / cancellation HTTP API
 
 ---
 
