@@ -151,6 +151,15 @@ class FakeExecutionAdapter(BrokerExecutionAdapter):
             raise ExecutionAdapterError("missing", code=BROKER_UNAVAILABLE)
         return dict(self.broker_orders[broker_order_id])
 
+    async def get_order_by_client_order_id(
+        self, client_order_id: str
+    ) -> dict[str, Any] | None:
+        """Fallback lookup used after uncertain acknowledgments."""
+        existing = self.orders_by_client.get(client_order_id)
+        if existing is None:
+            return None
+        return dict(self.broker_orders.get(existing.broker_order_id) or {})
+
     async def get_fills_for_order(self, broker_order_id: str) -> list[dict[str, Any]]:
         return list(self.fills_by_order.get(broker_order_id, []))
 

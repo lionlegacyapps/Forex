@@ -1,19 +1,20 @@
 """Paper session lifecycle service — manual activation only.
 
 No public HTTP start endpoint. No auto-start on deploy/restart.
-PAPER_EXECUTE is rejected in V1 (disabled).
+PAPER_EXECUTE requires feature flag + session-scoped consent (disabled by default).
 """
 
 from __future__ import annotations
 
 import logging
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.audit.service import AuditService
+from app.core.config import Settings, get_settings
 from app.models.broker_account import BrokerAccount
 from app.models.enums import (
     PaperSessionExecutionMode,
@@ -21,14 +22,17 @@ from app.models.enums import (
     TradingMode,
 )
 from app.models.mixins import utc_now
+from app.models.paper_execution_authorization import PaperExecutionAuthorization
 from app.models.paper_trading_session import PaperTradingSession
 from app.models.strategy_paper_qualification import StrategyPaperQualification
+from app.paper_sessions.authorization import PaperExecutionAuthorizationService
 from app.paper_sessions.errors import (
     ActivationRejectedError,
     PaperExecuteDisabledError,
     PaperSessionError,
 )
 from app.paper_sessions.memory import PaperSessionMemoryRecorder
+from app.paper_sessions.paper_endpoint import verify_alpaca_paper_endpoint
 from app.paper_sessions.reconciliation import (
     BrokerSnapshotSource,
     StaticBrokerSnapshotSource,
@@ -53,7 +57,7 @@ SESSION_STOPPED = "PAPER_SESSION_STOPPED"
 SESSION_KILL = "PAPER_SESSION_EMERGENCY_KILL"
 SESSION_FAILED = "PAPER_SESSION_FAILED"
 
-# V1: PAPER_EXECUTE cannot be activated.
+# Module default remains fail-closed; runtime reads Settings.
 ALLOW_PAPER_EXECUTE_ACTIVATION = False
 
 
@@ -66,15 +70,28 @@ class PaperSessionService:
         eligibility: PaperEligibilityService | None = None,
         memory: PaperSessionMemoryRecorder | None = None,
         broker_source: BrokerSnapshotSource | None = None,
-        allow_paper_execute: bool = ALLOW_PAPER_EXECUTE_ACTIVATION,
+        settings: Settings | None = None,
+        allow_paper_execute: bool | None = None,
+        authorization: PaperExecutionAuthorizationService | None = None,
     ) -> None:
         self.db = db
+        self.settings = settings or get_settings()
         self.repo = PaperSessionRepository(db)
         self.audit = audit or AuditService(db)
         self.eligibility = eligibility or PaperEligibilityService(db)
         self.memory = memory or PaperSessionMemoryRecorder(db)
         self.broker_source = broker_source or StaticBrokerSnapshotSource()
-        self.allow_paper_execute = allow_paper_execute
+        if allow_paper_execute is None:
+            self.allow_paper_execute = bool(self.settings.paper_session_execute_enabled)
+        else:
+            self.allow_paper_execute = allow_paper_execute
+        self.authorization = authorization or PaperExecutionAuthorizationService(
+            db,
+            audit=self.audit,
+            eligibility=self.eligibility,
+            memory=self.memory,
+            settings=self.settings,
+        )
         self._broker_orders_created = 0
 
     @property
@@ -102,6 +119,8 @@ class PaperSessionService:
         if execution_mode == PaperSessionExecutionMode.PAPER_EXECUTE:
             if not self.allow_paper_execute:
                 raise PaperExecuteDisabledError()
+            # Server-side paper endpoint must be valid before creating execute sessions.
+            verify_alpaca_paper_endpoint(None, settings=self.settings)
 
         account = self.db.get(BrokerAccount, broker_account_id)
         if account is None:
@@ -140,6 +159,7 @@ class PaperSessionService:
             max_orders_per_session=max_orders_per_session
             or risk_limits.max_orders_per_session,
             orders_submitted_count=0,
+            submissions_blocked=False,
             state_version=0,
         )
         self.repo.add(row)
@@ -159,24 +179,56 @@ class PaperSessionService:
         assert self._broker_orders_created == 0
         return row
 
+    def grant_execution_consent(
+        self,
+        session_id: uuid.UUID,
+        *,
+        owner: AuthenticatedOwner,
+        expires_in_seconds: int | None = None,
+        one_time: bool = False,
+        now: datetime | None = None,
+    ) -> PaperExecutionAuthorization:
+        """Explicit session-scoped PAPER_EXECUTE consent (service-layer only)."""
+        if not self.allow_paper_execute:
+            raise PaperExecuteDisabledError()
+        row = self._get(session_id)
+        return self.authorization.grant(
+            row,
+            owner=owner,
+            expires_in_seconds=expires_in_seconds,
+            one_time=one_time,
+            now=now,
+        )
+
+    def revoke_execution_consent(
+        self,
+        session_id: uuid.UUID,
+        *,
+        owner: AuthenticatedOwner,
+        reason: str = "manual_revoke",
+    ) -> PaperExecutionAuthorization | None:
+        return self.authorization.revoke(
+            session_id, owner=owner, reason=reason
+        )
+
     async def activate(
         self,
         session_id: uuid.UUID,
         *,
         owner: AuthenticatedOwner,
         now: datetime | None = None,
+        require_consent_for_execute: bool = True,
     ) -> PaperTradingSession:
         """Explicit manual start — never called automatically."""
         now = now or datetime.now(UTC)
         row = self._get(session_id)
-        if row.created_by != owner.subject:
-            # Owner must match creator OR be in allowlist (already authenticated).
-            # Still require authenticated owner; allow any allowlisted owner.
-            pass
 
         if row.execution_mode == PaperSessionExecutionMode.PAPER_EXECUTE:
             if not self.allow_paper_execute:
                 raise PaperExecuteDisabledError()
+            verify_alpaca_paper_endpoint(None, settings=self.settings)
+            if require_consent_for_execute:
+                self.authorization.require_active_consent(row, now=now)
 
         account = self.db.get(BrokerAccount, row.broker_account_id)
         if account is None or account.trading_mode != TradingMode.PAPER:
@@ -200,21 +252,22 @@ class PaperSessionService:
                 code="qualification_failed",
             )
         if elig.qualification_id != row.qualification_approval_id:
-            # Binding must match the stored approval id when present on eligibility
             if elig.qualification_id is not None:
                 raise ActivationRejectedError(
                     "qualification approval id mismatch",
                     code="qualification_mismatch",
                 )
 
-        # Risk limits present
         SessionRiskLimits.from_storage(row.risk_limits)
 
+        paper_execute = row.execution_mode == PaperSessionExecutionMode.PAPER_EXECUTE
         recon = await reconcile_before_activation(
             self.db,
             account=account,
             broker_source=self.broker_source,
             instrument=row.instrument,
+            require_buying_power=paper_execute,
+            verify_paper_endpoint=paper_execute,
         )
         assert_activation_safe(recon)
 
@@ -238,7 +291,12 @@ class PaperSessionService:
             started_at=now,
             last_heartbeat_at=now,
         )
-        self._audit(SESSION_STARTED, row, owner=owner, details={"mode": row.execution_mode.value})
+        self._audit(
+            SESSION_STARTED,
+            row,
+            owner=owner,
+            details={"mode": row.execution_mode.value},
+        )
         self.memory.record(
             session_id=row.id,
             symbol=row.instrument,
@@ -258,8 +316,13 @@ class PaperSessionService:
         self, session_id: uuid.UUID, *, owner: AuthenticatedOwner
     ) -> PaperTradingSession:
         row = self._get(session_id)
-        row = self._transition(row, PaperSessionState.PAUSING)
-        row = self._transition(row, PaperSessionState.PAUSED)
+        if row.session_state == PaperSessionState.PAUSED:
+            return row
+        if row.session_state == PaperSessionState.PAUSING:
+            row = self._transition(row, PaperSessionState.PAUSED)
+        else:
+            row = self._transition(row, PaperSessionState.PAUSING)
+            row = self._transition(row, PaperSessionState.PAUSED)
         self._audit(SESSION_PAUSED, row, owner=owner)
         self.memory.record(
             session_id=row.id,
@@ -275,9 +338,10 @@ class PaperSessionService:
         self, session_id: uuid.UUID, *, owner: AuthenticatedOwner
     ) -> PaperTradingSession:
         row = self._get(session_id)
+        if row.session_state == PaperSessionState.RUNNING:
+            return row
         if row.session_state != PaperSessionState.PAUSED:
             raise PaperSessionError("resume requires PAUSED", code="invalid_resume")
-        # Re-check eligibility before resume
         elig = self.eligibility.check(
             engine_strategy_id=row.engine_strategy_id,
             strategy_version=row.strategy_version,
@@ -290,6 +354,8 @@ class PaperSessionService:
                 "cannot resume: " + ",".join(elig.reasons),
                 code="qualification_failed",
             )
+        if row.execution_mode == PaperSessionExecutionMode.PAPER_EXECUTE:
+            self.authorization.require_active_consent(row)
         row = self._transition(row, PaperSessionState.RUNNING, last_heartbeat_at=utc_now())
         self._audit(SESSION_RESUMED, row, owner=owner)
         return row
@@ -304,6 +370,9 @@ class PaperSessionService:
         row = self._get(session_id)
         if row.session_state in {PaperSessionState.STOPPED, PaperSessionState.FAILED}:
             return row
+
+        # Invalidate execution authorization on stop (idempotent).
+        self.authorization.revoke(session_id, owner=owner, reason=reason)
 
         if row.session_state in {
             PaperSessionState.CREATED,
@@ -335,7 +404,6 @@ class PaperSessionService:
             payload={"reason": reason, "state": row.session_state.value},
             strategy_db_id=row.strategy_db_id,
         )
-        # Does not claim open orders/positions are eliminated.
         return row
 
     def emergency_kill(
@@ -345,23 +413,35 @@ class PaperSessionService:
         owner: AuthenticatedOwner,
         reason: str = "emergency_kill",
     ) -> dict[str, Any]:
-        """Immediately disable further strategy submissions.
+        """Immediately disable further strategy submissions and revoke consent.
 
         Does NOT claim submitted orders or positions are eliminated.
         Account-scoped: only affects this session.
         """
         row = self._get(session_id)
+        revoked = self.authorization.revoke(
+            session_id, owner=owner, reason=reason
+        )
+        row = self.repo.update_atomic(
+            row,
+            expected_version=row.state_version,
+            submissions_blocked=True,
+            submissions_block_reason=reason,
+        )
         row = self.stop(session_id, owner=owner, reason=reason)
         self._audit(SESSION_KILL, row, owner=owner, details={"reason": reason})
         return {
             "session_id": str(row.id),
             "session_state": row.session_state.value,
             "further_submissions_disabled": True,
+            "execution_consent_revoked": revoked is not None
+            or self.authorization.get_granted(session_id) is None,
             "orders_cancelled": False,
             "positions_liquidated": False,
             "note": (
-                "Emergency kill disabled this session only. "
-                "Already submitted orders and existing positions are NOT claimed eliminated."
+                "Emergency kill disabled this session and revoked PAPER_EXECUTE "
+                "consent. Already submitted orders and existing positions are "
+                "NOT claimed eliminated."
             ),
         }
 
@@ -384,6 +464,29 @@ class PaperSessionService:
                 worker_lease_owner=None,
                 worker_lease_expires_at=None,
             )
+        return row
+
+    def clear_submission_block(
+        self,
+        session_id: uuid.UUID,
+        *,
+        owner: AuthenticatedOwner,
+        reason: str = "operator_cleared",
+    ) -> PaperTradingSession:
+        """Clear uncertain-ACK block after successful reconciliation (manual)."""
+        row = self._get(session_id)
+        row = self.repo.update_atomic(
+            row,
+            expected_version=row.state_version,
+            submissions_blocked=False,
+            submissions_block_reason=None,
+        )
+        self._audit(
+            "PAPER_SESSION_SUBMISSION_BLOCK_CLEARED",
+            row,
+            owner=owner,
+            details={"reason": reason},
+        )
         return row
 
     def _get(self, session_id: uuid.UUID) -> PaperTradingSession:

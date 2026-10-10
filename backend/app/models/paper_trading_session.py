@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -32,6 +33,7 @@ from app.models.types import str_enum_column
 
 if TYPE_CHECKING:
     from app.models.broker_account import BrokerAccount
+    from app.models.paper_execution_authorization import PaperExecutionAuthorization
     from app.models.strategy import Strategy
     from app.models.strategy_paper_qualification import StrategyPaperQualification
 
@@ -137,11 +139,19 @@ class PaperTradingSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Integer, nullable=False, default=0, server_default=text("0")
     )
     failure_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    submissions_blocked: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    submissions_block_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     strategy: Mapped[Strategy | None] = relationship()
     broker_account: Mapped[BrokerAccount] = relationship()
     qualification: Mapped[StrategyPaperQualification] = relationship()
     processed_bars: Mapped[list[PaperSessionProcessedBar]] = relationship(
+        back_populates="session",
+        cascade="all, delete-orphan",
+    )
+    execution_authorizations: Mapped[list[PaperExecutionAuthorization]] = relationship(
         back_populates="session",
         cascade="all, delete-orphan",
     )

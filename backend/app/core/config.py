@@ -89,8 +89,11 @@ class Settings(BaseSettings):
     # Empty allowlist → approval fail-closed (no approvals possible).
     paper_qualification_owner_subjects: str = ""
 
-    # PAPER_EXECUTE session activation (default False — V1 dry-run only).
+    # PAPER_EXECUTE session activation (default False — fail closed).
+    # Enabling this flag alone is NOT enough; session-scoped consent is required.
     paper_session_execute_enabled: bool = False
+    # Consent TTL seconds (default 15 minutes). Max 86400.
+    paper_session_execute_consent_ttl_seconds: int = 900
 
     @classmethod
     def settings_customise_sources(

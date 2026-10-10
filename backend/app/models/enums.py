@@ -65,6 +65,15 @@ class PaperSessionExecutionMode(StrEnum):
     PAPER_EXECUTE = "paper_execute"
 
 
+class PaperExecutionConsentState(StrEnum):
+    """Session-scoped PAPER_EXECUTE authorization lifecycle."""
+
+    GRANTED = "granted"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+    CONSUMED = "consumed"
+
+
 class TradeSide(StrEnum):
     BUY = "buy"
     SELL = "sell"
