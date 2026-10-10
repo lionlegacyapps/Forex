@@ -66,6 +66,9 @@ filesystems. The VPS is replaceable compute.
   env + baseline policy adapted; full FinRL-X / alpaca-py / torch **not** installed)
 - Freqtrade Strategy Research & Adapter V1 (GPL-3.0 reference-only intake;
   independent indicators + `rsi_macd_trend` strategy; Freqtrade bot **not** installed)
+- Strategy Evaluation & Market Memory V1 (normalized evaluation records, regime
+  classification, trade attribution, same-dataset comparison, persistence into
+  existing `market_memory_events`; **no** auto-promotion / live trading)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
@@ -75,7 +78,8 @@ See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [github-strategy-intake-adapter-framework-v1.md](./github-strategy-intake-adapter-framework-v1.md),
 [microsoft-qlib-research-integration-v1.md](./microsoft-qlib-research-integration-v1.md),
 [finrl-x-rl-research-integration-v1.md](./finrl-x-rl-research-integration-v1.md),
-and [freqtrade-strategy-research-adapter-v1.md](./freqtrade-strategy-research-adapter-v1.md).
+[freqtrade-strategy-research-adapter-v1.md](./freqtrade-strategy-research-adapter-v1.md),
+and [strategy-evaluation-market-memory-v1.md](./strategy-evaluation-market-memory-v1.md).
 
 **EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
 
