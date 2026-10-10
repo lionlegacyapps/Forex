@@ -9,6 +9,12 @@ EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.
 Research outputs never automatically trigger trading.
 """
 
+from app.research.freqtrade_intake import (
+    FREQTRADE_PINNED_COMMIT,
+    FREQTRADE_REPOSITORY_URL,
+    build_freqtrade_intake_result,
+    freqtrade_reference_manifest,
+)
 from app.research.data import ResearchBarFrame, bars_to_research_frame
 from app.research.factors import compute_momentum_factor, compute_return_factor
 from app.research.models import ResearchOutput, ResearchPrediction
@@ -35,6 +41,8 @@ from app.research.strategy_adapter import QlibFactorSignalAdapter
 __all__ = [
     "FINRLX_PINNED_COMMIT",
     "FINRLX_REPOSITORY_URL",
+    "FREQTRADE_PINNED_COMMIT",
+    "FREQTRADE_REPOSITORY_URL",
     "DeterministicMomentumBaselinePolicy",
     "FinRLXBaselineSignalAdapter",
     "OfflineTradingEnv",
@@ -48,10 +56,12 @@ __all__ = [
     "ResearchPrediction",
     "bars_to_research_frame",
     "build_finrlx_intake_result",
+    "build_freqtrade_intake_result",
     "build_qlib_intake_result",
     "compute_momentum_factor",
     "compute_return_factor",
     "evaluate_policy",
     "finrlx_approved_adaptation_manifest",
+    "freqtrade_reference_manifest",
     "qlib_approved_adaptation_manifest",
 ]

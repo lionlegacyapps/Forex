@@ -64,6 +64,8 @@ filesystems. The VPS is replaceable compute.
   adapted into isolated `app.research`; full `pyqlib` **not** installed/executed)
 - FinRL-X RL Research Integration V1 (official FinRL-Trading intake; offline
   env + baseline policy adapted; full FinRL-X / alpaca-py / torch **not** installed)
+- Freqtrade Strategy Research & Adapter V1 (GPL-3.0 reference-only intake;
+  independent indicators + `rsi_macd_trend` strategy; Freqtrade bot **not** installed)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
@@ -72,9 +74,11 @@ See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [strategy-engine-backtesting-v1.md](./strategy-engine-backtesting-v1.md),
 [github-strategy-intake-adapter-framework-v1.md](./github-strategy-intake-adapter-framework-v1.md),
 [microsoft-qlib-research-integration-v1.md](./microsoft-qlib-research-integration-v1.md),
-and [finrl-x-rl-research-integration-v1.md](./finrl-x-rl-research-integration-v1.md).
+[finrl-x-rl-research-integration-v1.md](./finrl-x-rl-research-integration-v1.md),
+and [freqtrade-strategy-research-adapter-v1.md](./freqtrade-strategy-research-adapter-v1.md).
 
 **EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
 
-Not implemented: live trading, Tradovate, Freqtrade, executing full Qlib/FinRL-X
-in the trading runtime, DRL training workers, AI auto-trading, frontend charts.
+Not implemented: live trading, Tradovate, installing/running Freqtrade or
+full Qlib/FinRL-X in the trading runtime, DRL training workers, hyperopt,
+AI auto-trading, frontend charts.
