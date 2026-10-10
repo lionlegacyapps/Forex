@@ -19,11 +19,12 @@ from app.strategies.errors import (
 from app.strategies.proposal_adapter import StrategyProposalAdapter
 from app.strategies.protocol import Strategy, assert_strategy_metadata
 from app.strategies.registry import StrategyRegistry
-from app.strategies.reference import SMACrossoverStrategy
+from app.strategies.reference import RSIMACDTrendStrategy, SMACrossoverStrategy
 
 __all__ = [
     "DecisionAction",
     "PortfolioContextView",
+    "RSIMACDTrendStrategy",
     "SMACrossoverStrategy",
     "Strategy",
     "StrategyContext",
