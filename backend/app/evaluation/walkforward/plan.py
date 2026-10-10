@@ -1,4 +1,4 @@
-"""Walk-forward readiness metadata (no parameter search / optimization)."""
+"""Walk-forward plan metadata (no parameter search / optimization)."""
 
 from __future__ import annotations
 
@@ -10,9 +10,10 @@ from app.evaluation.models import SplitRole
 
 
 class ChronologicalSplit(BaseModel):
-    """Future TRAIN / VALIDATION / OUT_OF_SAMPLE windows.
+    """TRAIN / VALIDATION / OUT_OF_SAMPLE bounds.
 
-    Windows must be strictly chronological. Labeling FULL_SAMPLE as OOS is forbidden.
+    Bounds are half-open ``[start, end)`` in harness scoring semantics.
+    Labeling FULL_SAMPLE as OOS is forbidden.
     """
 
     role: SplitRole
@@ -26,7 +27,6 @@ class ChronologicalSplit(BaseModel):
         if self.start >= self.end:
             raise ValueError("split start must be before end")
         if self.role == SplitRole.FULL_SAMPLE:
-            # Allowed as a single window label, but never as OOS evidence.
             pass
         return self
 
@@ -46,10 +46,6 @@ class WalkForwardPlan(BaseModel):
     )
 
     def assert_no_oos_mislabel(self) -> None:
-        for s in self.splits:
-            if s.role == SplitRole.OUT_OF_SAMPLE:
-                continue
-            # Nothing to rewrite — callers must pass correct SplitRole into evaluation.
         roles = [s.role for s in self.splits]
         if SplitRole.OUT_OF_SAMPLE in roles and SplitRole.TRAIN not in roles:
             raise ValueError("OOS split without prior TRAIN is invalid for walk-forward")
