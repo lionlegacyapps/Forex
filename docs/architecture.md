@@ -72,6 +72,9 @@ filesystems. The VPS is replaceable compute.
 - Walk-Forward Evaluation Harness V1 (chronological TRAIN/VALIDATION/OOS splits,
   rolling/expanding windows, leakage guards, fixed-parameter evaluation;
   **no** optimization / promotion / live trading)
+- Paper Strategy Qualification Gate V1 (evidence review + manual owner approval
+  for paper-session eligibility; durable approvals; **no** session start / orders /
+  live trading)
 
 See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [alpaca-paper-account-read-path-v1.md](./alpaca-paper-account-read-path-v1.md),
@@ -83,7 +86,8 @@ See [market-data-provider-v1.md](./market-data-provider-v1.md),
 [finrl-x-rl-research-integration-v1.md](./finrl-x-rl-research-integration-v1.md),
 [freqtrade-strategy-research-adapter-v1.md](./freqtrade-strategy-research-adapter-v1.md),
 [strategy-evaluation-market-memory-v1.md](./strategy-evaluation-market-memory-v1.md),
-and [walk-forward-evaluation-harness-v1.md](./walk-forward-evaluation-harness-v1.md).
+[walk-forward-evaluation-harness-v1.md](./walk-forward-evaluation-harness-v1.md),
+and [paper-strategy-qualification-gate-v1.md](./paper-strategy-qualification-gate-v1.md).
 
 **EXTERNAL GITHUB CODE IS NEVER TRUSTED BY DEFAULT.**
 
