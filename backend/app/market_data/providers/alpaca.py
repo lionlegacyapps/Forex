@@ -22,6 +22,7 @@ from app.market_data.errors import (
     PROVIDER_UNAVAILABLE,
     QUOTE_UNAVAILABLE,
     RATE_LIMITED,
+    SUBSCRIPTION_FORBIDDEN,
     TRADE_UNAVAILABLE,
     UNSUPPORTED_ASSET_CLASS,
     MarketDataError,
@@ -30,6 +31,8 @@ from app.market_data.models import Bar, MarketDataAssetClass, Quote, Trade
 from app.market_data.provider import MarketDataProvider
 
 logger = logging.getLogger(__name__)
+
+_ALLOWED_FEEDS = frozenset({"iex", "sip"})
 
 # Stock market data only for Alpaca V1.
 _SUPPORTED = frozenset({MarketDataAssetClass.EQUITY})
@@ -72,6 +75,7 @@ class AlpacaMarketDataProvider(MarketDataProvider):
         api_secret: str,
         base_url: str = "https://data.alpaca.markets",
         timeout_seconds: float = 5.0,
+        feed: str = "iex",
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if not api_key or not api_secret:
@@ -79,11 +83,22 @@ class AlpacaMarketDataProvider(MarketDataProvider):
                 "Alpaca market-data credentials are required",
                 code=AUTHENTICATION_FAILED,
             )
+        feed_norm = (feed or "iex").strip().lower()
+        if feed_norm not in _ALLOWED_FEEDS:
+            raise MarketDataError(
+                f"Unsupported Alpaca market-data feed {feed_norm!r}; use iex or sip",
+                code=PROVIDER_UNAVAILABLE,
+            )
         self._api_key = api_key
         self._api_secret = api_secret
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout_seconds
+        self._feed = feed_norm
         self._transport = transport
+
+    @property
+    def feed(self) -> str:
+        return self._feed
 
     @property
     def provider_name(self) -> str:
@@ -124,8 +139,33 @@ class AlpacaMarketDataProvider(MarketDataProvider):
         except httpx.HTTPError as exc:
             raise MarketDataError("Alpaca market-data network error", code=PROVIDER_UNAVAILABLE) from exc
 
-        if response.status_code in {401, 403}:
-            raise MarketDataError("Alpaca market-data authentication failed", code=AUTHENTICATION_FAILED)
+        if response.status_code == 401:
+            raise MarketDataError(
+                "Alpaca market-data authentication failed",
+                code=AUTHENTICATION_FAILED,
+            )
+        if response.status_code == 403:
+            # Do not log response bodies that might contain sensitive detail;
+            # classify subscription/feed denials separately from bad credentials.
+            body_text = ""
+            try:
+                payload = response.json()
+                if isinstance(payload, dict):
+                    body_text = str(payload.get("message") or "")
+            except Exception:  # noqa: BLE001
+                body_text = ""
+            lowered = body_text.lower()
+            if "subscription" in lowered or "sip" in lowered or "feed" in lowered:
+                raise MarketDataError(
+                    "Alpaca market-data feed/subscription denied "
+                    f"(configured feed={self._feed}). "
+                    "Use ALPACA_DATA_FEED=iex for free-tier access, or upgrade SIP.",
+                    code=SUBSCRIPTION_FORBIDDEN,
+                )
+            raise MarketDataError(
+                "Alpaca market-data access forbidden",
+                code=AUTHENTICATION_FAILED,
+            )
         if response.status_code == 429:
             raise MarketDataError("Alpaca market-data rate limited", code=RATE_LIMITED)
         if response.status_code == 404:
@@ -157,7 +197,9 @@ class AlpacaMarketDataProvider(MarketDataProvider):
         sym = symbol.strip().upper()
         if not sym:
             raise MarketDataError("Invalid symbol", code=INVALID_SYMBOL)
-        data = await self._get(f"/v2/stocks/{sym}/quotes/latest")
+        data = await self._get(
+            f"/v2/stocks/{sym}/quotes/latest", params={"feed": self._feed}
+        )
         quote = data.get("quote") or data
         if not isinstance(quote, dict):
             raise MarketDataError("Quote unavailable", code=QUOTE_UNAVAILABLE)
@@ -188,7 +230,9 @@ class AlpacaMarketDataProvider(MarketDataProvider):
         sym = symbol.strip().upper()
         if not sym:
             raise MarketDataError("Invalid symbol", code=INVALID_SYMBOL)
-        data = await self._get(f"/v2/stocks/{sym}/trades/latest")
+        data = await self._get(
+            f"/v2/stocks/{sym}/trades/latest", params={"feed": self._feed}
+        )
         trade = data.get("trade") or data
         if not isinstance(trade, dict):
             raise MarketDataError("Trade unavailable", code=TRADE_UNAVAILABLE)
@@ -222,11 +266,20 @@ class AlpacaMarketDataProvider(MarketDataProvider):
         sym = symbol.strip().upper()
         if not sym:
             raise MarketDataError("Invalid symbol", code=INVALID_SYMBOL)
-        params: dict[str, Any] = {"timeframe": timeframe}
+        params: dict[str, Any] = {"timeframe": timeframe, "feed": self._feed}
         if start is not None:
-            params["start"] = start.isoformat()
+            # Prefer date-only for daily bars; Alpaca accepts ISO dates.
+            params["start"] = (
+                start.date().isoformat()
+                if timeframe.lower() in {"1day", "day", "1d"}
+                else start.isoformat()
+            )
         if end is not None:
-            params["end"] = end.isoformat()
+            params["end"] = (
+                end.date().isoformat()
+                if timeframe.lower() in {"1day", "day", "1d"}
+                else end.isoformat()
+            )
         if limit is not None:
             params["limit"] = limit
         data = await self._get(f"/v2/stocks/{sym}/bars", params=params)

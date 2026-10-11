@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     alpaca_api_key: str | None = None
     alpaca_api_secret: str | None = None
     alpaca_data_base_url: str = "https://data.alpaca.markets"
+    # Equity market-data feed: iex (default free-tier) or sip (paid subscription).
+    # Recent SIP queries return HTTP 403 without a SIP subscription — not a bad key.
+    alpaca_data_feed: str = "iex"
     # Paper trading API only — live api.alpaca.markets is forbidden by code.
     alpaca_paper_base_url: str = "https://paper-api.alpaca.markets"
     alpaca_paper_timeout_seconds: float = 10.0

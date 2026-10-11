@@ -32,13 +32,19 @@ This runbook is for a **future** real Alpaca paper-order pilot.
 # Deployment / shared .env — KEEP FALSE
 PAPER_SESSION_EXECUTE_ENABLED=false
 PAPER_SESSION_EXECUTE_CONSENT_TTL_SECONDS=900
-PAPER_QUALIFICATION_OWNER_SUBJECTS=owner@example.com
+# Exact server-resolved authenticated subject — never invent; never commit real values
+PAPER_QUALIFICATION_OWNER_SUBJECTS=<exact-authenticated-subject>
 ALPACA_PAPER_BASE_URL=https://paper-api.alpaca.markets
+ALPACA_DATA_BASE_URL=https://data.alpaca.markets
+# iex = free-tier; sip requires paid subscription (recent SIP → 403)
+ALPACA_DATA_FEED=iex
 # Keys only in private operator env — never commit, never log
 ALPACA_API_KEY=...
 ALPACA_API_SECRET=...
 ALLOW_ALPACA_PAPER_ORDER_TEST=false
 ```
+
+See also `docs/paper-pilot-onboarding-blocker-remediation-v1.md`.
 
 Confirm Alembic head is `e2b5c9d41f6a`.
 
