@@ -155,10 +155,11 @@ def persist_qualification_evidence(
         dataset_fingerprint=result.dataset_fingerprint,
     )
 
-    # Ensure strategy row exists for FK when requested
+    # Ensure strategy row exists for FK when requested.
+    # Name must be unique per (name, version) — never reuse a fixed label.
     if strategy_db_id is None:
         strat = StrategyRow(
-            name=f"{result.strategy_id}-{result.strategy_version}",
+            name=f"{result.strategy_id}-{result.strategy_version}-{uuid.uuid4().hex[:10]}",
             strategy_type="reference",
             version=result.strategy_version,
             status=StrategyStatus.DEVELOPMENT,
