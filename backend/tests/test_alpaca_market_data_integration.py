@@ -29,10 +29,13 @@ async def test_alpaca_market_data_readonly_optional() -> None:
         pytest.skip("ALPACA_API_KEY / ALPACA_API_SECRET not configured")
 
     key, secret = creds
+    settings = get_settings()
     provider = AlpacaMarketDataProvider(
         api_key=key,
         api_secret=secret,
+        base_url=settings.alpaca_data_base_url,
         timeout_seconds=10.0,
+        feed=settings.alpaca_data_feed,
     )
     # Architectural: no trading methods
     assert not hasattr(provider, "place_order")

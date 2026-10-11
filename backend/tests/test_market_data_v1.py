@@ -16,6 +16,7 @@ from app.market_data.errors import (
     QUOTE_UNAVAILABLE,
     RATE_LIMITED,
     STALE_MARKET_DATA,
+    SUBSCRIPTION_FORBIDDEN,
     TRADE_UNAVAILABLE,
     UNSUPPORTED_ASSET_CLASS,
     MarketDataError,
@@ -289,6 +290,15 @@ async def test_alpaca_provider_maps_http_errors(monkeypatch: pytest.MonkeyPatch)
     await _run(404, INVALID_SYMBOL)
 
     _Client._resp = _Resp(
+        403,
+        {"message": "subscription does not permit querying recent SIP data"},
+    )
+    monkeypatch.setattr("app.market_data.providers.alpaca.httpx.AsyncClient", _Client)
+    with pytest.raises(MarketDataError) as sub_exc:
+        await provider.get_quote("AAPL")
+    assert sub_exc.value.code == SUBSCRIPTION_FORBIDDEN
+
+    _Client._resp = _Resp(
         200,
         {
             "quote": {
@@ -304,3 +314,4 @@ async def test_alpaca_provider_maps_http_errors(monkeypatch: pytest.MonkeyPatch)
     q = await provider.get_quote("AAPL")
     assert q.bid_price == Decimal("100.5")
     assert isinstance(q.ask_price, Decimal)
+    assert provider.feed == "iex"
